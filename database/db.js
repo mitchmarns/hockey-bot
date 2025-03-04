@@ -316,6 +316,12 @@ async function initDatabase(guildId) {
       }
     }
 
+    // Add face_claim if it doesn't exist
+    if (!playerColumnNames.includes("face_claim")) {
+      await db.run("ALTER TABLE players ADD COLUMN face_claim TEXT");
+      console.log(`Added face_claim column to players table for guild ${guildId}`);
+    }
+
     // Extended team stats
     const teamColumns = await db.all("PRAGMA table_info(teams)");
     const teamColumnNames = teamColumns.map((col) => col.name);

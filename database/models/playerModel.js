@@ -25,12 +25,34 @@ async function getPlayersByTeamId(teamId, guildId) {
 }
 
 // Create a player
-async function createPlayer(name, position, number, teamId, userId, imageUrl = null, guildId) {
+async function createPlayer(name, position, number, teamId, userId, imageUrl = null, faceClaim = null, guildId) {
   const db = getDb(guildId);
-  return await db.run(
-    'INSERT INTO players (name, position, number, team_id, user_id, image_url) VALUES (?, ?, ?, ?, ?, ?)',
-    [name, position, number, teamId, userId, imageUrl]
-  );
+  
+  // Check if the column exists first to avoid errors in older versions
+  try {
+    const columns = await db.all('PRAGMA table_info(players)');
+    const columnNames = columns.map(c => c.name);
+    
+    if (columnNames.includes('face_claim')) {
+      return await db.run(
+        'INSERT INTO players (name, position, number, team_id, user_id, image_url, face_claim) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, position, number, teamId, userId, imageUrl, faceClaim]
+      );
+    } else {
+      // Fallback to old schema without face_claim
+      return await db.run(
+        'INSERT INTO players (name, position, number, team_id, user_id, image_url) VALUES (?, ?, ?, ?, ?, ?)',
+        [name, position, number, teamId, userId, imageUrl]
+      );
+    }
+  } catch (error) {
+    console.error('Error in createPlayer function:', error);
+    // Fallback to the simplest version
+    return await db.run(
+      'INSERT INTO players (name, position, number, team_id, user_id, image_url) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, position, number, teamId, userId, imageUrl]
+    );
+  }
 }
 
 // Update player image

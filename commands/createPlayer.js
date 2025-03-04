@@ -82,9 +82,10 @@ async function createPlayer(interaction) {
     const number = interaction.options.getInteger('number');
     const teamName = interaction.options.getString('team');
     const imageUrl = interaction.options.getString('image') || null;
+    const faceClaim = interaction.options.getString('faceclaim') || null;
     const guildId = interaction.guildId;
     
-    console.log('Create Player Parameters:', { name, position, number, teamName, imageUrl, guildId });
+    console.log('Create Player Parameters:', { name, position, number, teamName, imageUrl, faceClaim, guildId });
     
     // Check if the team exists
     const team = await teamModel.getTeamByName(teamName, guildId);
@@ -101,6 +102,7 @@ async function createPlayer(interaction) {
       team.id, 
       interaction.user.id, 
       imageUrl,
+      faceClaim,
       guildId
     );
     console.log('Player created successfully');
@@ -115,6 +117,11 @@ async function createPlayer(interaction) {
         { name: 'Number', value: number.toString(), inline: true }
       )
       .setTimestamp();
+
+      // Add face claim if provided
+    if (faceClaim) {
+      embed.addFields({ name: 'Face Claim', value: faceClaim, inline: true });
+    }
       
     // Add player image if provided
     if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {

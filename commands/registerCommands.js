@@ -29,7 +29,11 @@ const commands = [
     .addStringOption(option => 
       option.setName('image')
         .setDescription('URL to player image')
-        .setRequired(false)),
+        .setRequired(false))
+    .addStringOption(option => 
+    option.setName('faceclaim')
+      .setDescription('Face claim')
+      .setRequired(false)),
 
   new SlashCommandBuilder()
     .setName('updateplayerimage')
