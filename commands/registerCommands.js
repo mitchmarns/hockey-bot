@@ -470,7 +470,9 @@ new SlashCommandBuilder()
       .setMinValue(1)
       .setMaxValue(100)
       .setRequired(false)),
-
+      new SlashCommandBuilder()
+  .setName('initdb')
+  .setDescription('Force initialize database for this server (admin only)'),
 ];
 
 async function registerCommands() {
