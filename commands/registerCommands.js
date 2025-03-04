@@ -530,7 +530,115 @@ new SlashCommandBuilder()
 .addStringOption(option => 
   option.setName('team')
     .setDescription('Team name')
-    .setRequired(true))
+    .setRequired(true)),
+
+// Character creation command
+new SlashCommandBuilder()
+  .setName('createcharacter')
+  .setDescription('Create a new character (player, coach, staff member, civilian, etc.)')
+  .addStringOption(option => 
+    option.setName('name')
+      .setDescription('Character name')
+      .setRequired(true))
+  .addStringOption(option => 
+    option.setName('type')
+      .setDescription('Character type')
+      .setRequired(true)
+      .addChoices(
+        { name: 'Player', value: 'player' },
+        { name: 'Coach', value: 'coach' },
+        { name: 'Team Staff', value: 'staff' },
+        { name: 'Civilian', value: 'civilian' }
+      ))
+  .addStringOption(option => 
+    option.setName('team')
+      .setDescription('Associated team (employment or fandom)')
+      .setRequired(true))
+  .addStringOption(option => 
+    option.setName('role')
+      .setDescription('Character role/job')
+      .setRequired(true))
+  .addStringOption(option => 
+    option.setName('bio')
+      .setDescription('Character biography')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('image')
+      .setDescription('URL to character image')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('faceclaim')
+      .setDescription('Actor/actress used as a face claim')
+      .setRequired(false))
+  // Player-specific options
+  .addStringOption(option => 
+    option.setName('position')
+      .setDescription('Player position (only for players)')
+      .setRequired(false))
+  .addIntegerOption(option => 
+    option.setName('jersey')
+      .setDescription('Jersey number (only for players)')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('height')
+      .setDescription('Player height (only for players)')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('weight')
+      .setDescription('Player weight (only for players)')
+      .setRequired(false))
+  // Coach-specific options
+  .addStringOption(option => 
+    option.setName('specialty')
+      .setDescription('Coaching specialty (only for coaches)')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('experience')
+      .setDescription('Years of coaching experience (only for coaches)')
+      .setRequired(false)),
+
+// Character info command
+new SlashCommandBuilder()
+  .setName('characterinfo')
+  .setDescription('View information about a character')
+  .addStringOption(option => 
+    option.setName('name')
+      .setDescription('Character name')
+      .setRequired(true)),
+
+// Team roster command
+new SlashCommandBuilder()
+  .setName('teamroster')
+  .setDescription('View a team\'s full roster (players, coaches, staff, etc.)')
+  .addStringOption(option => 
+    option.setName('team')
+      .setDescription('Team name')
+      .setRequired(true))
+  .addStringOption(option => 
+    option.setName('type')
+      .setDescription('Filter by character type')
+      .setRequired(false)
+      .addChoices(
+        { name: 'All', value: 'all' },
+        { name: 'Players', value: 'player' },
+        { name: 'Coaches', value: 'coach' },
+        { name: 'Staff', value: 'staff' },
+        { name: 'Civilians', value: 'civilian' }
+      )),
+
+// My characters command
+new SlashCommandBuilder()
+  .setName('mycharacters')
+  .setDescription('View all characters you have created'),
+
+// Delete character command
+new SlashCommandBuilder()
+  .setName('deletecharacter')
+  .setDescription('Delete one of your characters')
+  .addStringOption(option => 
+    option.setName('name')
+      .setDescription('Character name')
+      .setRequired(true))
 ];
 
 async function registerCommands() {
