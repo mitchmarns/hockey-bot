@@ -7,35 +7,6 @@ const { TOKEN, CLIENT_ID, POSITIONS } = require('../config/config');
 // Define commands
 const commands = [
   new SlashCommandBuilder()
-    .setName('createplayer')
-    .setDescription('Create a new hockey player character')
-    .addStringOption(option => 
-      option.setName('name')
-        .setDescription('Player name')
-        .setRequired(true))
-    .addStringOption(option => 
-      option.setName('position')
-        .setDescription('Player position')
-        .setRequired(true)
-        .addChoices(...POSITIONS))
-    .addIntegerOption(option => 
-      option.setName('number')
-        .setDescription('Jersey number')
-        .setRequired(true))
-    .addStringOption(option => 
-      option.setName('team')
-        .setDescription('Team name')
-        .setRequired(true))
-    .addStringOption(option => 
-      option.setName('image')
-        .setDescription('URL to player image')
-        .setRequired(false))
-    .addStringOption(option => 
-    option.setName('faceclaim')
-      .setDescription('Face claim')
-      .setRequired(false)),
-
-  new SlashCommandBuilder()
     .setName('updateplayerimage')
     .setDescription('Update a player\'s image')
     .addStringOption(option => 
@@ -106,34 +77,10 @@ const commands = [
       option.setName('series')
         .setDescription('Playoff series ID (if applicable)')
         .setRequired(false)),
-  
-  new SlashCommandBuilder()
-    .setName('roster')
-    .setDescription('Display a team\'s roster')
-    .addStringOption(option => 
-      option.setName('team')
-        .setDescription('Team name')
-        .setRequired(true)),
         
   new SlashCommandBuilder()
     .setName('standings')
     .setDescription('Display the league standings'),
-    
-  new SlashCommandBuilder()
-    .setName('playerinfo')
-    .setDescription('Get information about a player')
-    .addStringOption(option => 
-      option.setName('name')
-        .setDescription('Player name')
-        .setRequired(true)),
-    
-  new SlashCommandBuilder()
-    .setName('roll')
-    .setDescription('Roll dice for skill checks')
-    .addIntegerOption(option => 
-      option.setName('skill')
-        .setDescription('Skill level (1-100)')
-        .setRequired(true)),
 
   new SlashCommandBuilder()
   .setName('setskills')
@@ -201,27 +148,6 @@ const commands = [
       .setDescription('Number of players to show (default: 10)')
       .setMinValue(1)
       .setMaxValue(50)
-      .setRequired(false)),
-
-  new SlashCommandBuilder()
-  .setName('removeplayer')
-  .setDescription('Permanently remove a player character')
-  .addStringOption(option => 
-    option.setName('name')
-      .setDescription('Player name')
-      .setRequired(true)),
-  new SlashCommandBuilder()
-  .setName('gamehistory')
-  .setDescription('View history of played games')
-  .addStringOption(option => 
-    option.setName('team')
-      .setDescription('Filter by team name (leave empty for all games)')
-      .setRequired(false))
-  .addIntegerOption(option => 
-    option.setName('limit')
-      .setDescription('Number of games to show (default: 10)')
-      .setMinValue(1)
-      .setMaxValue(30)
       .setRequired(false)),
 
   new SlashCommandBuilder()
@@ -426,57 +352,6 @@ new SlashCommandBuilder()
       new SlashCommandBuilder()
   .setName('initdb')
   .setDescription('Force initialize database for this server (admin only)'),
-  // Coach management commands
-new SlashCommandBuilder()
-.setName('createcoach')
-.setDescription('Create a new coach')
-.addStringOption(option => 
-  option.setName('name')
-    .setDescription('Coach name')
-    .setRequired(true))
-.addStringOption(option => 
-  option.setName('team')
-    .setDescription('Team name')
-    .setRequired(true))
-.addStringOption(option => 
-  option.setName('type')
-    .setDescription('Coach type')
-    .setRequired(false)
-    .addChoices(
-      { name: 'Head Coach', value: 'head' },
-      { name: 'Assistant Coach', value: 'assistant' },
-      { name: 'Goalie Coach', value: 'goalie' },
-      { name: 'Video Coach', value: 'video' },
-      { name: 'Skills Coach', value: 'skills' }
-    ))
-.addStringOption(option => 
-  option.setName('image')
-    .setDescription('URL to coach image')
-    .setRequired(false))
-.addStringOption(option => 
-  option.setName('bio')
-    .setDescription('Coach biography')
-    .setRequired(false))
-.addStringOption(option => 
-  option.setName('faceclaim')
-    .setDescription('Actor/actress used as a face claim')
-    .setRequired(false)),
-
-new SlashCommandBuilder()
-.setName('coachinfo')
-.setDescription('Get information about a coach')
-.addStringOption(option => 
-  option.setName('name')
-    .setDescription('Coach name')
-    .setRequired(true)),
-
-new SlashCommandBuilder()
-.setName('coachingstaff')
-.setDescription('View a team\'s coaching staff')
-.addStringOption(option => 
-  option.setName('team')
-    .setDescription('Team name')
-    .setRequired(true)),
 
 // Lines management commands
 new SlashCommandBuilder()
