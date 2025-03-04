@@ -10,10 +10,6 @@ const playerInfo = require('./playerInfo');
 const roll = require('./roll');
 const setPlayerSkills = require('./setPlayerSkills');
 const stats = require('./stats');
-const assignPhone = require('./assignPhone');
-const sendText = require('./sendText');
-const viewInbox = require('./viewInbox');
-const viewConversation = require('./viewConversation');
 const removePlayer = require('./removePlayer');
 const gameHistory = require('./gameHistory');
 const gameDetails = require('./gameDetails');
@@ -46,10 +42,6 @@ module.exports = {
   roll: roll,
   setskills: setPlayerSkills,
   stats: stats,
-  assignphone: assignPhone,
-  text: sendText,
-  inbox: viewInbox,
-  conversation: viewConversation,
   removeplayer: removePlayer,
   gamehistory: gameHistory,
   gamedetails: gameDetails,

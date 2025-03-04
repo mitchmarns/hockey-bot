@@ -198,57 +198,6 @@ const commands = [
       .setMinValue(1)
       .setMaxValue(50)
       .setRequired(false)),
-  // Phone assignment command
-  new SlashCommandBuilder()
-  .setName('assignphone')
-  .setDescription('Assign a phone number to your character')
-  .addStringOption(option => 
-    option.setName('player')
-      .setDescription('Your player name')
-      .setRequired(true))
-  .addStringOption(option => 
-    option.setName('number')
-      .setDescription('Phone number to assign')
-      .setRequired(true)),
-
-  // Text messaging commands
-  new SlashCommandBuilder()
-  .setName('text')
-  .setDescription('Send a text message to another player')
-  .addStringOption(option => 
-    option.setName('from')
-      .setDescription('Your player name')
-      .setRequired(true))
-  .addStringOption(option => 
-    option.setName('to')
-      .setDescription('Recipient phone number or player name')
-      .setRequired(true))
-  .addStringOption(option => 
-    option.setName('message')
-      .setDescription('Message content')
-      .setRequired(true)),
-
-  // View inbox
-  new SlashCommandBuilder()
-  .setName('inbox')
-  .setDescription('View your character\'s message inbox')
-  .addStringOption(option => 
-    option.setName('player')
-      .setDescription('Your player name')
-      .setRequired(true)),
-
-  // View conversation
-  new SlashCommandBuilder()
-  .setName('conversation')
-  .setDescription('View a conversation with another player')
-  .addStringOption(option => 
-    option.setName('player')
-      .setDescription('Your player name')
-      .setRequired(true))
-  .addStringOption(option => 
-    option.setName('with')
-      .setDescription('Other player\'s name or phone number')
-      .setRequired(true)),
 
   new SlashCommandBuilder()
   .setName('removeplayer')
