@@ -427,7 +427,7 @@ new SlashCommandBuilder()
       ))
   .addStringOption(option => 
     option.setName('team')
-      .setDescription('Associated team (employment or fandom)')
+      .setDescription('Associated team (plays for, works for, or fan of')
       .setRequired(true))
   .addStringOption(option => 
     option.setName('job')
@@ -443,13 +443,14 @@ new SlashCommandBuilder()
       .setRequired(false))
   .addStringOption(option => 
     option.setName('faceclaim')
-      .setDescription('Actor/actress used as a face claim')
+      .setDescription('face claim')
       .setRequired(false))
   // Player-specific options
   .addStringOption(option => 
     option.setName('position')
       .setDescription('Player position (only for players)')
-      .setRequired(false))
+      .setRequired(false)
+      .addChoices(...POSITIONS))
   .addIntegerOption(option => 
     option.setName('jersey')
       .setDescription('Jersey number (only for players)')
@@ -466,7 +467,15 @@ new SlashCommandBuilder()
   .addStringOption(option => 
     option.setName('specialty')
       .setDescription('Coaching specialty (only for coaches)')
-      .setRequired(false))
+      .setRequired(false)
+      .addChoices(
+        { name: 'Head Coach', value: 'Head Coach' },
+        { name: 'Assistant Coach', value: 'Assistant Coach' },
+        { name: 'Offensive Coordinator', value: 'Offensive Coordinator' },
+        { name: 'Defensive Coordinator', value: 'Defensive Coordinator' },
+        { name: 'Special Teams Coach', value: 'Special Teams Coach' },
+        { name: 'Position Coach', value: 'Position Coach' }
+      ))
   .addStringOption(option => 
     option.setName('experience')
       .setDescription('Years of coaching experience (only for coaches)')
