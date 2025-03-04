@@ -29,7 +29,7 @@ async function deleteCharacter(interaction) {
       .setDescription(`${character.name} (${character.character_type.charAt(0).toUpperCase() + character.character_type.slice(1)})`)
       .addFields(
         { name: 'Team', value: character.team_city + ' ' + character.team_name, inline: true },
-        { name: 'Role', value: character.role, inline: true }
+        { name: 'Job', value: character.job, inline: true }
       );
       
     if (character.image_url) {

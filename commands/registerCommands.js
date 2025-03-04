@@ -430,8 +430,8 @@ new SlashCommandBuilder()
       .setDescription('Associated team (employment or fandom)')
       .setRequired(true))
   .addStringOption(option => 
-    option.setName('role')
-      .setDescription('Character role/job')
+    option.setName('job')
+      .setDescription('Character job')
       .setRequired(true))
   .addStringOption(option => 
     option.setName('bio')

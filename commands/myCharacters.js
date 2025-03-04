@@ -42,7 +42,7 @@ async function myCharacters(interaction) {
     // Add coaches section if there are coaches
     if (coachCharacters.length > 0) {
       const coachList = coachCharacters.map(c => {
-        return `**${c.name}** - ${c.team_city} ${c.team_name} ${c.role ? `(${c.role})` : ''}`;
+        return `**${c.name}** - ${c.team_city} ${c.team_name} ${c.job ? `(${c.job})` : ''}`;
       }).join('\n');
       
       embed.addFields({ name: '📋 Coaches', value: coachList });
@@ -51,7 +51,7 @@ async function myCharacters(interaction) {
     // Add staff section if there are staff
     if (staffCharacters.length > 0) {
       const staffList = staffCharacters.map(s => {
-        return `**${s.name}** - ${s.team_city} ${s.team_name} ${s.role ? `(${s.role})` : ''}`;
+        return `**${s.name}** - ${s.team_city} ${s.team_name} ${s.job ? `(${s.job})` : ''}`;
       }).join('\n');
       
       embed.addFields({ name: '🧰 Staff', value: staffList });
@@ -60,7 +60,7 @@ async function myCharacters(interaction) {
     // Add civilians section if there are civilians
     if (civilianCharacters.length > 0) {
       const civilianList = civilianCharacters.map(c => {
-        return `**${c.name}** - ${c.team_city} ${c.team_name} ${c.role ? `(${c.role})` : ''}`;
+        return `**${c.name}** - ${c.team_city} ${c.team_name} ${c.job ? `(${c.job})` : ''}`;
       }).join('\n');
       
       embed.addFields({ name: '🏙️ Civilians', value: civilianList });

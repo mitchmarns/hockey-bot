@@ -20,7 +20,7 @@ async function initCharacterSchema(guildId) {
           name TEXT NOT NULL,
           character_type TEXT NOT NULL, /* 'player', 'coach', 'staff', 'civilian', etc. */
           team_id INTEGER,
-          role TEXT NOT NULL,
+          job TEXT,
           user_id TEXT NOT NULL,
           biography TEXT,
           image_url TEXT,
@@ -61,7 +61,7 @@ async function createCharacter(characterData) {
     characterData.name, 
     characterData.charType, 
     characterData.teamId, 
-    characterData.role, 
+    characterData.job, 
     characterData.userId, 
     characterData.biography, 
     characterData.imageUrl, 
@@ -84,7 +84,7 @@ async function createCharacter(characterData) {
   
   return await db.run(
     `INSERT INTO characters (
-      name, character_type, team_id, role, user_id, biography, image_url, face_claim,
+      name, character_type, team_id, job, user_id, biography, image_url, face_claim,
       position, jersey_number, height, weight,
       specialty, experience
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

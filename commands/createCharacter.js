@@ -12,7 +12,7 @@ async function createCharacter(interaction) {
     const name = interaction.options.getString('name');
     const charType = interaction.options.getString('type');
     const teamName = interaction.options.getString('team');
-    const role = interaction.options.getString('role');
+    const job = interaction.options.getString('job');
     const biography = interaction.options.getString('bio') || null;
     const imageUrl = interaction.options.getString('image') || null;
     const faceClaim = interaction.options.getString('faceclaim') || null;
@@ -29,7 +29,7 @@ async function createCharacter(interaction) {
       name,
       charType,
       teamId: team.id,
-      role,
+      job,
       userId: interaction.user.id,
       biography,
       imageUrl,
@@ -68,17 +68,17 @@ async function createCharacter(interaction) {
     
     // Add type-specific fields to embed
     if (charType === 'player') {
-      if (role) embed.addFields({ name: 'Role', value: role, inline: true });
+      if (job) embed.addFields({ name: 'Job', value: job, inline: true });
       if (characterData.position) embed.addFields({ name: 'Position', value: characterData.position, inline: true });
       if (characterData.jerseyNumber) embed.addFields({ name: 'Jersey #', value: characterData.jerseyNumber.toString(), inline: true });
       if (characterData.height) embed.addFields({ name: 'Height', value: characterData.height, inline: true });
       if (characterData.weight) embed.addFields({ name: 'Weight', value: characterData.weight, inline: true });
     } else if (charType === 'coach') {
-      if (role) embed.addFields({ name: 'Role', value: role, inline: true });
+      if (job) embed.addFields({ name: 'Job', value: job, inline: true });
       if (characterData.specialty) embed.addFields({ name: 'Specialty', value: characterData.specialty, inline: true });
       if (characterData.experience) embed.addFields({ name: 'Experience', value: characterData.experience, inline: true });
     } else {
-      embed.addFields({ name: 'Role', value: role, inline: true });
+      embed.addFields({ name: 'Job', value: job, inline: true });
     }
     
     // Add face claim if provided

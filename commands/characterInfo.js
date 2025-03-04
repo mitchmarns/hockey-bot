@@ -22,7 +22,7 @@ async function characterInfo(interaction) {
       .addFields(
         { name: 'Name', value: character.name, inline: true },
         { name: 'Team', value: character.team_id ? `${character.team_city} ${character.team_name}` : 'No Team', inline: true },
-        { name: 'Role', value: character.role, inline: true }
+        { name: 'Job', value: character.job, inline: true }
       )
       .setTimestamp();
     

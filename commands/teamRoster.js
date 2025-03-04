@@ -71,8 +71,8 @@ async function teamRoster(interaction) {
     if ((coachCharacters.length > 0 && filterType === 'all') || filterType === 'coach') {
       let coachList = coachCharacters.map(c => {
         let details = c.name;
-        if (c.role) {
-          details += ` (${c.role})`;
+        if (c.job) {
+          details += ` (${c.job})`;
         }
         return details;
       }).join('\n');
@@ -90,8 +90,8 @@ async function teamRoster(interaction) {
     if ((staffCharacters.length > 0 && filterType === 'all') || filterType === 'staff') {
       let staffList = staffCharacters.map(s => {
         let details = s.name;
-        if (s.role) {
-          details += ` (${s.role})`;
+        if (s.job) {
+          details += ` (${s.job})`;
         }
         return details;
       }).join('\n');
@@ -109,8 +109,8 @@ async function teamRoster(interaction) {
     if ((civilianCharacters.length > 0 && filterType === 'all') || filterType === 'civilian') {
       let civilianList = civilianCharacters.map(c => {
         let details = c.name;
-        if (c.role) {
-          details += ` (${c.role})`;
+        if (c.job) {
+          details += ` (${c.job})`;
         }
         return details;
       }).join('\n');
