@@ -473,6 +473,107 @@ new SlashCommandBuilder()
       new SlashCommandBuilder()
   .setName('initdb')
   .setDescription('Force initialize database for this server (admin only)'),
+  // Coach management commands
+new SlashCommandBuilder()
+.setName('createcoach')
+.setDescription('Create a new coach')
+.addStringOption(option => 
+  option.setName('name')
+    .setDescription('Coach name')
+    .setRequired(true))
+.addStringOption(option => 
+  option.setName('team')
+    .setDescription('Team name')
+    .setRequired(true))
+.addStringOption(option => 
+  option.setName('type')
+    .setDescription('Coach type')
+    .setRequired(false)
+    .addChoices(
+      { name: 'Head Coach', value: 'head' },
+      { name: 'Assistant Coach', value: 'assistant' },
+      { name: 'Goalie Coach', value: 'goalie' },
+      { name: 'Video Coach', value: 'video' },
+      { name: 'Skills Coach', value: 'skills' }
+    ))
+.addStringOption(option => 
+  option.setName('image')
+    .setDescription('URL to coach image')
+    .setRequired(false))
+.addStringOption(option => 
+  option.setName('bio')
+    .setDescription('Coach biography')
+    .setRequired(false)),
+
+new SlashCommandBuilder()
+.setName('coachinfo')
+.setDescription('Get information about a coach')
+.addStringOption(option => 
+  option.setName('name')
+    .setDescription('Coach name')
+    .setRequired(true)),
+
+new SlashCommandBuilder()
+.setName('coachingstaff')
+.setDescription('View a team\'s coaching staff')
+.addStringOption(option => 
+  option.setName('team')
+    .setDescription('Team name')
+    .setRequired(true)),
+
+// Lines management commands
+new SlashCommandBuilder()
+.setName('setlines')
+.setDescription('Set team lines (coach only)')
+.addStringOption(option => 
+  option.setName('team')
+    .setDescription('Team name')
+    .setRequired(true))
+.addStringOption(option => 
+  option.setName('linetype')
+    .setDescription('Type of line to set')
+    .setRequired(true)
+    .addChoices(
+      { name: 'Forward Line', value: 'forward' },
+      { name: 'Defense Pair', value: 'defense' },
+      { name: 'Power Play Unit', value: 'powerplay' },
+      { name: 'Penalty Kill Unit', value: 'penalty_kill' },
+      { name: 'Goalie Rotation', value: 'goalie' }
+    ))
+.addIntegerOption(option => 
+  option.setName('number')
+    .setDescription('Line number (1st, 2nd, 3rd, 4th line)')
+    .setRequired(true)
+    .setMinValue(1)
+    .setMaxValue(4))
+.addStringOption(option => 
+  option.setName('player1')
+    .setDescription('1st player (center for forwards, defense for D-pairs, starter for goalies)')
+    .setRequired(true))
+.addStringOption(option => 
+  option.setName('player2')
+    .setDescription('2nd player (left wing for forwards, defense for D-pairs, backup for goalies)')
+    .setRequired(true))
+.addStringOption(option => 
+  option.setName('player3')
+    .setDescription('3rd player (right wing for forwards, req. for PP/PK, third string goalie)')
+    .setRequired(false))
+.addStringOption(option => 
+  option.setName('player4')
+    .setDescription('4th player (only for powerplay/penalty kill units)')
+    .setRequired(false))
+.addStringOption(option => 
+  option.setName('player5')
+    .setDescription('5th player (only for powerplay/penalty kill units)')
+    .setRequired(false)),
+
+new SlashCommandBuilder()
+.setName('viewlines')
+.setDescription('View a team\'s lines')
+.addStringOption(option => 
+  option.setName('team')
+    .setDescription('Team name')
+    .setRequired(true))
 ];
 
 async function registerCommands() {
@@ -480,14 +581,18 @@ async function registerCommands() {
   const rest = new REST({ version: '10' }).setToken(TOKEN);
 
   try {
-    console.log('Started refreshing application (/) commands.');
+    console.log('==== STARTED REFRESHING COMMANDS ====');
+    console.log(`Attempting to register ${commands.length} commands`);
+    
+    // Log the names of all commands being registered
+    commands.forEach(cmd => console.log(`- Registering: ${cmd.name}`));
 
     await rest.put(
       Routes.applicationCommands(CLIENT_ID),
       { body: commands },
     );
 
-    console.log('Successfully reloaded application (/) commands.');
+    console.log('==== SUCCESSFULLY RELOADED COMMANDS ====');
   } catch (error) {
     console.error('Error registering commands:', error);
   }

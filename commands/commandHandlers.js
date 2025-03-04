@@ -27,22 +27,11 @@ const simulateSeries = require('./simulateSeries');
 const startSeason = require('./startSeason');
 const instagramPost = require('./instagramPost');
 const createBotTeam = require('./createBotTeam');
-
-// Add to your commandHandlers.js file
-initdb: async function(interaction) {
-  try {
-    const { initDatabase } = require('../database/db');
-    await initDatabase(interaction.guildId);
-    return interaction.reply('Database initialized successfully!');
-  } catch (error) {
-    console.error('Error initializing database:', error);
-    return interaction.reply({
-      content: `Failed to initialize database: ${error.message}`,
-      ephemeral: true
-    });
-  }
-}
-
+const createCoach = require('./createCoach');
+const coachInfo = require('./coachInfo');
+const coachingStaff = require('./coachingStaff');
+const setLines = require('./setLines');
+const viewLines = require('./viewLines');
 
 // Export all handlers as a single object
 module.exports = {
@@ -74,4 +63,9 @@ module.exports = {
   startseason: startSeason,
   instagram: instagramPost,
   createbotteam: createBotTeam,
+  createcoach: createCoach,
+  coachinfo: coachInfo,
+  coachingstaff: coachingStaff,
+  setlines: setLines,
+  viewlines: viewLines,
 };

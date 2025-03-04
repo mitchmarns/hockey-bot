@@ -74,6 +74,9 @@ const { teamModel, playerModel } = findModels();
 
 async function createPlayer(interaction) {
   try {
+    // Defer the reply immediately to prevent interaction timeout
+    await interaction.deferReply({ ephemeral: false });
+
     const name = interaction.options.getString('name');
     const position = interaction.options.getString('position');
     const number = interaction.options.getInteger('number');
@@ -86,12 +89,12 @@ async function createPlayer(interaction) {
     // Check if the team exists
     const team = await teamModel.getTeamByName(teamName, guildId);
     if (!team) {
-      return interaction.reply(`Team "${teamName}" doesn't exist. Create it first with /createteam.`);
+      return interaction.editReply(`Team "${teamName}" doesn't exist. Create it first with /createteam.`);
     }
     
     // Create player
     console.log('Inserting player into database...');
-    await playerModel.createPlayer(
+    const playerResult = await playerModel.createPlayer(
       name, 
       position, 
       number, 
@@ -122,14 +125,29 @@ async function createPlayer(interaction) {
       }
     }
     
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
     
   } catch (error) {
-    console.error('Error in createPlayer command:', error);
-    await interaction.reply({ 
-      content: `An error occurred: ${error.message}`, 
-      ephemeral: true 
-    });
+    console.error('Full error in createPlayer command:', error);
+    
+    try {
+      // Attempt to edit the reply with the error
+      if (interaction.deferred) {
+        await interaction.editReply({ 
+          content: `An error occurred: ${error.message}`, 
+          ephemeral: true 
+        });
+      } else {
+        await interaction.reply({ 
+          content: `An error occurred: ${error.message}`, 
+          ephemeral: true 
+        });
+      }
+    } catch (replyError) {
+      console.error('Error sending error reply:', replyError);
+      // As a last resort, log the error
+      console.error('Could not send error message to user');
+    }
   }
 }
 
