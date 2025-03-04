@@ -13,6 +13,7 @@ async function createCoach(interaction) {
     const coachType = interaction.options.getString('type') || 'head';
     const imageUrl = interaction.options.getString('image') || null;
     const biography = interaction.options.getString('bio') || null;
+    const faceClaim = interaction.options.getString('faceclaim') || null;
     const guildId = interaction.guildId;
     
     // Find team
@@ -39,6 +40,7 @@ async function createCoach(interaction) {
       coachType,
       imageUrl,
       biography,
+      faceClaim,
       guildId
     );
     
@@ -53,6 +55,11 @@ async function createCoach(interaction) {
         { name: 'Position', value: coachType.charAt(0).toUpperCase() + coachType.slice(1) + ' Coach', inline: true }
       )
       .setTimestamp();
+    
+    // Add face claim if provided
+    if (faceClaim) {
+      embed.addFields({ name: 'Face Claim', value: faceClaim, inline: true });
+    }
     
     // Add biography if provided
     if (biography) {

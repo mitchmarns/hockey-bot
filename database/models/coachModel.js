@@ -42,12 +42,34 @@ async function getCoachesByTeamId(teamId, guildId) {
 }
 
 // Create a coach
-async function createCoach(name, teamId, userId, coachType, imageUrl = null, biography = null, guildId) {
+async function createCoach(name, teamId, userId, coachType, imageUrl = null, biography = null, faceClaim = null, guildId) {
   const db = getDb(guildId);
-  return await db.run(
-    'INSERT INTO coaches (name, team_id, user_id, coach_type, image_url, biography) VALUES (?, ?, ?, ?, ?, ?)',
-    [name, teamId, userId, coachType, imageUrl, biography]
-  );
+  
+  try {
+    // Check if face_claim column exists
+    const columns = await db.all('PRAGMA table_info(coaches)');
+    const columnNames = columns.map(c => c.name);
+    
+    if (columnNames.includes('face_claim')) {
+      return await db.run(
+        'INSERT INTO coaches (name, team_id, user_id, coach_type, image_url, biography, face_claim) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, teamId, userId, coachType, imageUrl, biography, faceClaim]
+      );
+    } else {
+      // Fallback to old schema without face_claim
+      return await db.run(
+        'INSERT INTO coaches (name, team_id, user_id, coach_type, image_url, biography) VALUES (?, ?, ?, ?, ?, ?)',
+        [name, teamId, userId, coachType, imageUrl, biography]
+      );
+    }
+  } catch (error) {
+    console.error('Error in createCoach function:', error);
+    // Fallback to the simplest version
+    return await db.run(
+      'INSERT INTO coaches (name, team_id, user_id, coach_type, image_url, biography) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, teamId, userId, coachType, imageUrl, biography]
+    );
+  }
 }
 
 // Update coach image

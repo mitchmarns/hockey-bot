@@ -61,9 +61,13 @@ async function coachingStaff(interaction) {
     
     // Add other coaching staff
     if (otherCoaches.length > 0) {
-      const otherCoachInfo = otherCoaches.map(c => 
-        `${c.name} (${c.coach_type.charAt(0).toUpperCase() + c.coach_type.slice(1)})${c.image_url ? ' 🖼️' : ''}`
-      ).join('\n');
+      const otherCoachInfo = otherCoaches.map(c => {
+        let info = `${c.name} (${c.coach_type.charAt(0).toUpperCase() + c.coach_type.slice(1)})`;
+        if (c.face_claim) info += ` (${c.face_claim})`;
+        if (c.image_url) info += ' 🖼️';
+        return info;
+      }).join('\n');
+      
       embed.addFields({ name: 'Other Staff', value: otherCoachInfo });
     }
     

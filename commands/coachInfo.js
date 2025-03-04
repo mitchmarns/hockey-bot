@@ -26,6 +26,11 @@ async function coachInfo(interaction) {
       )
       .setTimestamp();
     
+    // Add face claim if available
+    if (coach.face_claim) {
+      embed.addFields({ name: 'Face Claim', value: coach.face_claim, inline: true });
+    }
+    
     // Add biography if available
     if (coach.biography) {
       embed.addFields({ name: 'Biography', value: coach.biography });

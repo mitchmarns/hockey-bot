@@ -348,6 +348,16 @@ async function initDatabase(guildId) {
       }
     }
 
+    // Check if face_claim column exists in coaches table
+const coachColumns = await db.all("PRAGMA table_info(coaches)");
+const coachColumnNames = coachColumns.map(col => col.name);
+
+// Add face_claim if it doesn't exist
+if (!coachColumnNames.includes("face_claim")) {
+  await db.run("ALTER TABLE coaches ADD COLUMN face_claim TEXT");
+  console.log(`Added face_claim column to coaches table for guild ${guildId}`);
+}
+
     console.log(`Database tables initialized for guild ${guildId}`);
     return db;
   } catch (error) {

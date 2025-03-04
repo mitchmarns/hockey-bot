@@ -456,6 +456,10 @@ new SlashCommandBuilder()
 .addStringOption(option => 
   option.setName('bio')
     .setDescription('Coach biography')
+    .setRequired(false))
+.addStringOption(option => 
+  option.setName('faceclaim')
+    .setDescription('Actor/actress used as a face claim')
     .setRequired(false)),
 
 new SlashCommandBuilder()
