@@ -5,8 +5,10 @@ const characterModel = require('../database/models/characterModel');
 
 async function createCharacter(interaction) {
   try {
+    console.log('Deferring reply...');
     // Defer reply to give more processing time
     await interaction.deferReply();
+    console.log('Reply deferred.');
     
     // Get basic character information from command options
     const name = interaction.options.getString('name');
