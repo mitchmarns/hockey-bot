@@ -78,8 +78,8 @@ async function instagramPost(interaction) {
     const likeCount = Math.floor(Math.random() * 4900) + 100;
     
     // Format location display
-    const locationDisplay = location ? `📍 ${location}` : '';
-    
+    const locationDisplay = location ? `📍 ${location}` : null;
+
     // Build the Instagram-style embed
     const embed = new EmbedBuilder()
       .setColor('#E1306C') // Instagram color
@@ -87,9 +87,13 @@ async function instagramPost(interaction) {
         name: `${player.name} (@${player.name.replace(/\s+/g, '_').toLowerCase()})`,
         iconURL: player.image_url || null
       })
-      .setTitle(locationDisplay)
       .setImage(imageUrl)
       .setTimestamp();
+    
+    // Only set title if location is provided
+    if (locationDisplay) {
+      embed.setTitle(locationDisplay);
+    }
     
     // Generate random username for a comment
     const randomCommentUsers = [
@@ -210,7 +214,6 @@ async function instagramPost(interaction) {
           name: `${player.name} (@${player.name.replace(/\s+/g, '_').toLowerCase()})`,
           iconURL: player.image_url || null
         })
-        .setTitle(locationDisplay)
         .setImage(imgUrl)
         .setDescription(fullCaption)
         .addFields(
@@ -222,6 +225,11 @@ async function instagramPost(interaction) {
           text: `Instagram • ${new Date().toLocaleDateString()} • ${index + 2}/${additionalImages.length + 1}`
         })
         .setTimestamp();
+      
+      // Only set title if location is provided
+      if (locationDisplay) {
+        additionalEmbed.setTitle(locationDisplay);
+      }
       
       allEmbeds.push(additionalEmbed);
     });
