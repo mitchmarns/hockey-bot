@@ -2,6 +2,7 @@
 const { Client, GatewayIntentBits, Events, InteractionType } = require('discord.js');
 const { TOKEN } = require('./config/config');
 const { initDatabase } = require('./database/db');
+const { initCharacterSchema } = require('./database/models/characterModel');
 const registerCommands = require('./commands/registerCommands');
 const commandHandlers = require('./commands/commandHandlers');
 
@@ -15,6 +16,56 @@ const client = new Client({
     GatewayIntentBits.GuildPresences
   ] 
 });
+
+async function initCharacterSchema(guildId) {
+  console.log(`Initializing character schema for guild ${guildId}...`);
+  const db = getDb(guildId);
+  
+  try {
+    // Check if characters table exists
+    const tablesResult = await db.all("SELECT name FROM sqlite_master WHERE type='table' AND name='characters'");
+    const charactersTableExists = tablesResult.length > 0;
+    
+    if (!charactersTableExists) {
+      console.log(`Creating characters table for guild ${guildId}...`);
+      // Create characters table
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS characters (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          character_type TEXT NOT NULL,
+          team_id INTEGER,
+          job TEXT,
+          user_id TEXT NOT NULL,
+          biography TEXT,
+          image_url TEXT,
+          face_claim TEXT,
+          
+          /* Player-specific fields */
+          position TEXT,
+          jersey_number INTEGER,
+          height TEXT,
+          weight TEXT,
+          
+          /* Coach-specific fields */
+          specialty TEXT,
+          experience TEXT,
+          
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (team_id) REFERENCES teams (id)
+        )
+      `);
+      console.log(`Characters table created successfully for guild ${guildId}`);
+    } else {
+      console.log(`Characters table already exists for guild ${guildId}`);
+    }
+    
+    console.log(`Character schema initialization completed successfully for guild ${guildId}`);
+  } catch (error) {
+    console.error(`Error in character schema initialization for guild ${guildId}:`, error);
+    throw error;
+  }
+}
 
 // When the bot is ready
 client.once('ready', async () => {
@@ -30,9 +81,13 @@ client.once('ready', async () => {
       try {
         // Initialize the database for this guild
         await initDatabase(guildId);
-        console.log(`Successfully initialized database for guild: ${guild.name}`);
+        
+        // Initialize the character schema for this guild
+        await initCharacterSchema(guildId);
+        
+        console.log(`Successfully initialized database and character schema for guild: ${guild.name}`);
       } catch (guildError) {
-        console.error(`CRITICAL: Failed to initialize database for guild ${guild.name}:`, guildError);
+        console.error(`CRITICAL: Failed to initialize database/character schema for guild ${guild.name}:`, guildError);
       }
     }
     
