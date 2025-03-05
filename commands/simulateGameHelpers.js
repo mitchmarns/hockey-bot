@@ -1,16 +1,80 @@
-// Helper functions for game simulation - Updated for character model
+// simulateGameHelpers.js - Updated to handle both character and player models
 const skillsModel = require('../database/models/skillsModel');
+const playerModel = require('../database/models/playerModel');
 
-// Get character with skills
-async function getCharacterWithSkills(character, guildId) {
-  // Get skills for the character from the skills model
-  // The skills model should work with character IDs the same as it did with player IDs
-  const skills = await skillsModel.getPlayerSkills(character.id, guildId);
-  return { ...character, skills };
+// Enhanced character/player retrieval with compatibility for both models
+async function getCharacterWithSkills(entity, guildId) {
+  // Check if this is a player entity (from old model) or character entity (from new model)
+  const isPlayerModel = entity.hasOwnProperty('team_id') && !entity.hasOwnProperty('character_type');
+  const isCharacterModel = entity.hasOwnProperty('character_type');
+  
+  // Get skills for the entity - works with both player and character IDs
+  const skills = await skillsModel.getPlayerSkills(entity.id, guildId);
+  
+  return { ...entity, skills };
+}
+
+// Get all players by team ID - compatible with both models
+async function getTeamPlayers(teamId, guildId) {
+  try {
+    // Try to get characters first (new model)
+    const characterModel = require('../database/models/characterModel');
+    const characters = await characterModel.getCharactersByTeam(teamId, 'player', guildId);
+    
+    if (characters && characters.length > 0) {
+      return characters;
+    }
+    
+    // Fallback to players (old model) if no characters found
+    const players = await playerModel.getPlayersByTeamId(teamId, guildId);
+    return players;
+  } catch (error) {
+    console.log("Error getting team players, trying fallback:", error);
+    // Final fallback - direct database query that handles both models
+    const db = require('../database/db').getDb(guildId);
+    
+    try {
+      // First try characters table
+      const characters = await db.all(`
+        SELECT * FROM characters 
+        WHERE team_id = ? AND character_type = 'player'
+      `, [teamId]);
+      
+      if (characters && characters.length > 0) {
+        return characters;
+      }
+    } catch (e) {
+      console.log("Characters table query failed, trying players table");
+    }
+    
+    // Then try players table
+    try {
+      const players = await db.all(`
+        SELECT * FROM players 
+        WHERE team_id = ?
+      `, [teamId]);
+      
+      return players;
+    } catch (e) {
+      console.error("Both tables failed:", e);
+      return []; // Return empty array as last resort
+    }
+  }
 }
 
 // Function to calculate team strength
 function calculateTeamStrength(players) {
+  // Handle empty array case
+  if (!players || players.length === 0) {
+    return {
+      skating: 50,
+      offense: 50,
+      defense: 50,
+      goaltending: 50,
+      overall: 50
+    };
+  }
+
   const skaters = players.filter(p => p.position !== 'goalie');
   const goalies = players.filter(p => p.position === 'goalie');
   
@@ -65,6 +129,8 @@ function simulateGameScore(homeStrength, awayStrength) {
 
 // Enhanced goal scorer selection based on player skills
 function selectGoalScorer(skaters) {
+  if (!skaters || skaters.length === 0) return null;
+  
   // Weigh players by shooting skill
   const totalWeight = skaters.reduce((sum, player) => sum + (player.skills?.shooting || 50), 0);
   let random = Math.random() * totalWeight;
@@ -104,6 +170,7 @@ function selectAssist(skaters, scorerId) {
 
 module.exports = {
   getCharacterWithSkills,
+  getTeamPlayers,
   calculateTeamStrength,
   simulateGameScore,
   selectGoalScorer,
