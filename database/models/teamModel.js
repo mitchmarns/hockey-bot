@@ -3,12 +3,49 @@ const { getDb } = require('../db');
 
 // Get a team by name
 async function getTeamByName(name, guildId) {
+  if (!name) return null;
+  
   try {
-    const db = getDb(guildId);
-    return await db.get('SELECT * FROM teams WHERE name = ? COLLATE NOCASE', [name]);
+    const db = require("../db").getDb(guildId);
+    
+    // First try exact match (case-insensitive, trimmed)
+    let team = await db.get(
+      "SELECT * FROM teams WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))", 
+      [name]
+    );
+    
+    // If not found, try a LIKE match
+    if (!team) {
+      team = await db.get(
+        "SELECT * FROM teams WHERE LOWER(TRIM(name)) LIKE LOWER(TRIM(?))", 
+        [name]
+      );
+    }
+    
+    // Still not found? Try with % wildcards
+    if (!team) {
+      team = await db.get(
+        "SELECT * FROM teams WHERE LOWER(TRIM(name)) LIKE LOWER(TRIM(?))", 
+        [`%${name}%`]
+      );
+    }
+    
+    // Final fallback - try to match just on partial team name
+    if (!team && name.includes(' ')) {
+      // If name has spaces, try matching just the last part (team nickname)
+      const parts = name.split(' ');
+      const nickname = parts[parts.length - 1];
+      
+      team = await db.get(
+        "SELECT * FROM teams WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) OR LOWER(TRIM(name)) LIKE LOWER(TRIM(?))", 
+        [nickname, `%${nickname}%`]
+      );
+    }
+    
+    return team;
   } catch (error) {
-    console.error('Error in getTeamByName:', error);
-    throw error;
+    console.error(`Error finding team by name: ${error.message}`);
+    throw error; // Bubble up error for better debugging
   }
 }
 
