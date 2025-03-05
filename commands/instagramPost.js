@@ -262,9 +262,30 @@ async function instagramPost(interaction) {
         } else {
           currentImageIndex = (currentImageIndex - 1 + allEmbeds.length) % allEmbeds.length;
         }
-        
-        // Update navigation buttons
-        const updatedNavButtons = new ActionRowBuilder()
+
+          // Create fresh button components for each update
+          const updatedBaseButtons = new ActionRowBuilder()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId(`like_${postId}`)
+              .setLabel('❤️ Like')
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId(`comment_${postId}`)
+              .setLabel('💬 Comment')
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId(`share_${postId}`)
+              .setLabel('🔄 Share')
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId(`save_${postId}`)
+              .setLabel('🔖 Save')
+              .setStyle(ButtonStyle.Secondary)
+          );
+
+          // Update navigation buttons
+          const updatedNavButtons = new ActionRowBuilder()
           .addComponents(
             new ButtonBuilder()
               .setCustomId(`prev_${postId}`)
@@ -279,11 +300,11 @@ async function instagramPost(interaction) {
           );
         
         // Update the message with the new embed and buttons
-        const updatedComponents = [createBaseButtons(), updatedNavButtons];
+        const updatedComponents = [updatedBaseButtons, updatedNavButtons];
         await i.update({ embeds: [allEmbeds[currentImageIndex]], components: updatedComponents });
         
         return;
-      }
+      }      
       
       // Handle other button actions
       if (action === 'like') {
