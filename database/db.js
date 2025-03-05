@@ -110,7 +110,7 @@ async function initDatabase(guildId) {
         time TEXT,
         description TEXT,
         FOREIGN KEY (game_id) REFERENCES games (id),
-        FOREIGN KEY (player_id) REFERENCES players (id)
+        FOREIGN KEY (player_id) REFERENCES characters (id)
       )
     `);
 
@@ -126,7 +126,7 @@ async function initDatabase(guildId) {
         goaltending INTEGER DEFAULT 50,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (player_id) REFERENCES players (id)
+        FOREIGN KEY (player_id) REFERENCES characters (id)
       )
     `);
 
@@ -136,7 +136,7 @@ async function initDatabase(guildId) {
         player_id INTEGER NOT NULL,
         phone_number TEXT NOT NULL UNIQUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (player_id) REFERENCES players (id)
+        FOREIGN KEY (player_id) REFERENCES characters (id)
       )
     `);
 
@@ -160,7 +160,7 @@ async function initDatabase(guildId) {
         trigger_text TEXT NOT NULL,
         user_id TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (player_id) REFERENCES players (id)
+        FOREIGN KEY (player_id) REFERENCES characters (id)
       )
     `);
 
@@ -173,7 +173,7 @@ async function initDatabase(guildId) {
         trade_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         user_id TEXT NOT NULL,
         notes TEXT,
-        FOREIGN KEY (player_id) REFERENCES players (id),
+        FOREIGN KEY (player_id) REFERENCES characters (id),
         FOREIGN KEY (from_team_id) REFERENCES teams (id),
         FOREIGN KEY (to_team_id) REFERENCES teams (id)
       )
@@ -245,11 +245,11 @@ async function initDatabase(guildId) {
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (team_id) REFERENCES teams (id),
-  FOREIGN KEY (center_id) REFERENCES players (id),
-  FOREIGN KEY (left_wing_id) REFERENCES players (id),
-  FOREIGN KEY (right_wing_id) REFERENCES players (id),
-  FOREIGN KEY (defense1_id) REFERENCES players (id),
-  FOREIGN KEY (defense2_id) REFERENCES players (id)
+  FOREIGN KEY (center_id) REFERENCES characters (id),
+  FOREIGN KEY (left_wing_id) REFERENCES characters (id),
+  FOREIGN KEY (right_wing_id) REFERENCES characters (id),
+  FOREIGN KEY (defense1_id) REFERENCES characters (id),
+  FOREIGN KEY (defense2_id) REFERENCES characters (id)
 );
         `);
 
@@ -268,9 +268,9 @@ async function initDatabase(guildId) {
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (team_id) REFERENCES teams (id),
-  FOREIGN KEY (starter_id) REFERENCES players (id),
-  FOREIGN KEY (backup_id) REFERENCES players (id),
-  FOREIGN KEY (third_string_id) REFERENCES players (id)
+  FOREIGN KEY (starter_id) REFERENCES characters (id),
+  FOREIGN KEY (backup_id) REFERENCES characters (id),
+  FOREIGN KEY (third_string_id) REFERENCES characters (id)
 );
             `);
 
@@ -290,73 +290,61 @@ async function initDatabase(guildId) {
       );
     }
 
-    // Extended player stats
-    const playerColumns = await db.all("PRAGMA table_info(players)");
-    const playerColumnNames = playerColumns.map((col) => col.name);
-
-    const playerStats = [
-      { name: "plus_minus", type: "INTEGER DEFAULT 0" },
-      { name: "penalty_minutes", type: "INTEGER DEFAULT 0" },
-      { name: "shots", type: "INTEGER DEFAULT 0" },
-      { name: "blocks", type: "INTEGER DEFAULT 0" },
-      { name: "hits", type: "INTEGER DEFAULT 0" },
-      { name: "faceoff_wins", type: "INTEGER DEFAULT 0" },
-      { name: "faceoff_losses", type: "INTEGER DEFAULT 0" },
-      { name: "time_on_ice_seconds", type: "INTEGER DEFAULT 0" },
-      { name: "saves", type: "INTEGER DEFAULT 0" },
-      { name: "goals_against", type: "INTEGER DEFAULT 0" },
-      { name: "shutouts", type: "INTEGER DEFAULT 0" },
-    ];
-
-    for (const stat of playerStats) {
-      if (!playerColumnNames.includes(stat.name)) {
-        await db.run(
-          `ALTER TABLE players ADD COLUMN ${stat.name} ${stat.type}`
-        );
+    // Check if characters table exists and if it has the necessary stats columns
+    const tablesResult = await db.all("SELECT name FROM sqlite_master WHERE type='table' AND name='characters'");
+    const charactersTableExists = tablesResult.length > 0;
+    
+    if (charactersTableExists) {
+      // Check if the character table has the necessary stats columns
+      const characterColumns = await db.all("PRAGMA table_info(characters)");
+      const characterColumnNames = characterColumns.map(col => col.name);
+      
+      // Add hockey stats columns to the characters table if needed
+      const hockeyStats = [
+        { name: "goals", type: "INTEGER DEFAULT 0" },
+        { name: "assists", type: "INTEGER DEFAULT 0" },
+        { name: "shots", type: "INTEGER DEFAULT 0" },
+        { name: "games_played", type: "INTEGER DEFAULT 0" },
+        { name: "plus_minus", type: "INTEGER DEFAULT 0" },
+        { name: "penalty_minutes", type: "INTEGER DEFAULT 0" },
+        { name: "hits", type: "INTEGER DEFAULT 0" },
+        { name: "blocks", type: "INTEGER DEFAULT 0" },
+        { name: "faceoff_wins", type: "INTEGER DEFAULT 0" },
+        { name: "faceoff_losses", type: "INTEGER DEFAULT 0" },
+        { name: "time_on_ice_seconds", type: "INTEGER DEFAULT 0" },
+        { name: "saves", type: "INTEGER DEFAULT 0" },
+        { name: "goals_against", type: "INTEGER DEFAULT 0" },
+        { name: "shutouts", type: "INTEGER DEFAULT 0" },
+        { name: "power_play_goals", type: "INTEGER DEFAULT 0" },
+        { name: "short_handed_goals", type: "INTEGER DEFAULT 0" },
+        { name: "game_winning_goals", type: "INTEGER DEFAULT 0" }
+      ];
+      
+      for (const stat of hockeyStats) {
+        if (!characterColumnNames.includes(stat.name)) {
+          console.log(`Adding ${stat.name} column to characters table for guild ${guildId}`);
+          await db.run(`ALTER TABLE characters ADD COLUMN ${stat.name} ${stat.type}`);
+        }
       }
+      
+      console.log(`Verified hockey stats columns in characters table for guild ${guildId}`);
+    } else {
+      console.log(`Characters table doesn't exist for guild ${guildId} yet`);
     }
 
-    // Add face_claim if it doesn't exist
-    if (!playerColumnNames.includes("face_claim")) {
-      await db.run("ALTER TABLE players ADD COLUMN face_claim TEXT");
-      console.log(`Added face_claim column to players table for guild ${guildId}`);
-    }
-
-    // Extended team stats
-    const teamColumns = await db.all("PRAGMA table_info(teams)");
-    const teamColumnNames = teamColumns.map((col) => col.name);
-
-    const teamStats = [
-      { name: "goals_for", type: "INTEGER DEFAULT 0" },
-      { name: "goals_against", type: "INTEGER DEFAULT 0" },
-      { name: "shots_for", type: "INTEGER DEFAULT 0" },
-      { name: "shots_against", type: "INTEGER DEFAULT 0" },
-      { name: "power_plays", type: "INTEGER DEFAULT 0" },
-      { name: "power_play_goals", type: "INTEGER DEFAULT 0" },
-      { name: "penalties", type: "INTEGER DEFAULT 0" },
-      { name: "penalty_kill_success", type: "INTEGER DEFAULT 0" },
-      { name: "penalty_minutes", type: "INTEGER DEFAULT 0" },
-      { name: "home_wins", type: "INTEGER DEFAULT 0" },
-      { name: "home_losses", type: "INTEGER DEFAULT 0" },
-      { name: "away_wins", type: "INTEGER DEFAULT 0" },
-      { name: "away_losses", type: "INTEGER DEFAULT 0" },
-    ];
-
-    for (const stat of teamStats) {
-      if (!teamColumnNames.includes(stat.name)) {
-        await db.run(`ALTER TABLE teams ADD COLUMN ${stat.name} ${stat.type}`);
+    // Add face_claim if it doesn't exist in any character-related tables
+    try {
+      const coachColumns = await db.all("PRAGMA table_info(coaches)");
+      const coachColumnNames = coachColumns.map(col => col.name);
+      
+      // Add face_claim if it doesn't exist
+      if (!coachColumnNames.includes("face_claim")) {
+        await db.run("ALTER TABLE coaches ADD COLUMN face_claim TEXT");
+        console.log(`Added face_claim column to coaches table for guild ${guildId}`);
       }
+    } catch (error) {
+      console.log('Coaches table may not exist yet, skipping face_claim check');
     }
-
-    // Check if face_claim column exists in coaches table
-const coachColumns = await db.all("PRAGMA table_info(coaches)");
-const coachColumnNames = coachColumns.map(col => col.name);
-
-// Add face_claim if it doesn't exist
-if (!coachColumnNames.includes("face_claim")) {
-  await db.run("ALTER TABLE coaches ADD COLUMN face_claim TEXT");
-  console.log(`Added face_claim column to coaches table for guild ${guildId}`);
-}
 
     console.log(`Database tables initialized for guild ${guildId}`);
     return db;
