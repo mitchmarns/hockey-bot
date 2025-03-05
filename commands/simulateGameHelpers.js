@@ -1,10 +1,12 @@
-// Helper functions for game simulation extracted from simulateGame.js
+// Helper functions for game simulation - Updated for character model
 const skillsModel = require('../database/models/skillsModel');
 
-// Get player with skills
-async function getPlayerWithSkills(player, guildId) {
-  const skills = await skillsModel.getPlayerSkills(player.id, guildId);
-  return { ...player, skills };
+// Get character with skills
+async function getCharacterWithSkills(character, guildId) {
+  // Get skills for the character from the skills model
+  // The skills model should work with character IDs the same as it did with player IDs
+  const skills = await skillsModel.getPlayerSkills(character.id, guildId);
+  return { ...character, skills };
 }
 
 // Function to calculate team strength
@@ -101,7 +103,7 @@ function selectAssist(skaters, scorerId) {
 }
 
 module.exports = {
-  getPlayerWithSkills,
+  getCharacterWithSkills,
   calculateTeamStrength,
   simulateGameScore,
   selectGoalScorer,

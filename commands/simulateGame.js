@@ -1,13 +1,13 @@
-// Simulate Game command handler
+// Simulate Game command handler - Updated for character model
 const { EmbedBuilder } = require('discord.js');
 const teamModel = require('../database/models/teamModel');
-const playerModel = require('../database/models/playerModel');
+const characterModel = require('../database/models/characterModel');
 const skillsModel = require('../database/models/skillsModel');
 const gameModel = require('../database/models/gameModel');
 const seasonModel = require('../database/models/seasonModel');
 
 const {
-  getPlayerWithSkills,
+  getCharacterWithSkills,
   calculateTeamStrength,
   simulateGameScore,
   selectGoalScorer,
@@ -40,9 +40,9 @@ async function simulateGame(interaction) {
     return interaction.reply('Playoffs haven\'t started yet. Use /startplayoffs first.');
   }
   
-  // Find players on each team
-  let homePlayers = await playerModel.getPlayersByTeamId(homeTeam.id, guildId);
-  let awayPlayers = await playerModel.getPlayersByTeamId(awayTeam.id, guildId);
+  // Find characters who are players on each team
+  let homePlayers = await characterModel.getCharactersByTeam(homeTeam.id, 'player', guildId);
+  let awayPlayers = await characterModel.getCharactersByTeam(awayTeam.id, 'player', guildId);
   
   if (homePlayers.length < 6 || awayPlayers.length < 6) {
     return interaction.reply('Both teams need at least 6 players to simulate a game.');
@@ -52,8 +52,8 @@ async function simulateGame(interaction) {
   await interaction.deferReply();
   
   // Add skills to each player
-  homePlayers = await Promise.all(homePlayers.map(player => getPlayerWithSkills(player, guildId)));
-  awayPlayers = await Promise.all(awayPlayers.map(player => getPlayerWithSkills(player, guildId)));
+  homePlayers = await Promise.all(homePlayers.map(player => getCharacterWithSkills(player, guildId)));
+  awayPlayers = await Promise.all(awayPlayers.map(player => getCharacterWithSkills(player, guildId)));
 
   // Calculate team strengths
   const homeStrength = calculateTeamStrength(homePlayers);
@@ -62,7 +62,7 @@ async function simulateGame(interaction) {
   // Simulate game scores
   const { homeScore, awayScore } = simulateGameScore(homeStrength, awayStrength);
   
-  // Update team records
+  // Update team records 
   if (homeScore > awayScore) {
     await teamModel.updateTeamRecord(homeTeam.id, 'win', guildId);
     await teamModel.updateTeamRecord(awayTeam.id, 'loss', guildId);
@@ -119,19 +119,19 @@ async function simulateGame(interaction) {
       switch (event.type) {
         case 'shot':
           gameStats.home.shots++;
-          await playerModel.updatePlayerExtendedStats(event.player.id, { shots: 1 }, guildId);
+          await updateCharacterStats(event.player.id, { shots: 1 }, guildId);
           break;
         case 'hit':
           gameStats.home.hits++;
-          await playerModel.updatePlayerExtendedStats(event.player.id, { hits: 1 }, guildId);
+          await updateCharacterStats(event.player.id, { hits: 1 }, guildId);
           break;
         case 'blocked_shot':
           gameStats.home.blockedShots++;
-          await playerModel.updatePlayerExtendedStats(event.player.id, { blocks: 1 }, guildId);
+          await updateCharacterStats(event.player.id, { blocks: 1 }, guildId);
           break;
         case 'penalty':
           gameStats.home.penaltyMinutes += event.minutes;
-          await playerModel.updatePlayerExtendedStats(event.player.id, { penalty_minutes: event.minutes }, guildId);
+          await updateCharacterStats(event.player.id, { penalty_minutes: event.minutes }, guildId);
           break;
       }
       
@@ -156,19 +156,19 @@ async function simulateGame(interaction) {
       switch (event.type) {
         case 'shot':
           gameStats.away.shots++;
-          await playerModel.updatePlayerExtendedStats(event.player.id, { shots: 1 });
+          await updateCharacterStats(event.player.id, { shots: 1 }, guildId);
           break;
         case 'hit':
           gameStats.away.hits++;
-          await playerModel.updatePlayerExtendedStats(event.player.id, { hits: 1 });
+          await updateCharacterStats(event.player.id, { hits: 1 }, guildId);
           break;
         case 'blocked_shot':
           gameStats.away.blockedShots++;
-          await playerModel.updatePlayerExtendedStats(event.player.id, { blocks: 1 });
+          await updateCharacterStats(event.player.id, { blocks: 1 }, guildId);
           break;
         case 'penalty':
           gameStats.away.penaltyMinutes += event.minutes;
-          await playerModel.updatePlayerExtendedStats(event.player.id, { penalty_minutes: event.minutes });
+          await updateCharacterStats(event.player.id, { penalty_minutes: event.minutes }, guildId);
           break;
       }
       
@@ -179,7 +179,8 @@ async function simulateGame(interaction) {
         event.player.id,
         period,
         event.time,
-        event.description
+        event.description,
+        guildId
       );
     }
   }
@@ -193,13 +194,13 @@ async function simulateGame(interaction) {
     const assist = Math.random() > 0.3 ? selectAssist(homeSkaters, scorer.id) : null;
     
     // Update stats for scorer
-    await playerModel.updatePlayerStats(scorer.id, 1, 0);
-    await playerModel.updatePlayerExtendedStats(scorer.id, { shots: 1, plus_minus: 1 });
+    await updateCharacterStats(scorer.id, { goals: 1, shots: 1, plus_minus: 1 }, guildId);
+    await incrementGamesPlayed(scorer.id, guildId);
     
     // Update stats for assist if there is one
     if (assist) {
-      await playerModel.updatePlayerStats(assist.id, 0, 1);
-      await playerModel.updatePlayerExtendedStats(assist.id, { plus_minus: 1 });
+      await updateCharacterStats(assist.id, { assists: 1, plus_minus: 1 }, guildId);
+      await incrementGamesPlayed(assist.id, guildId);
     }
     
     // Record the goal event
@@ -228,22 +229,24 @@ async function simulateGame(interaction) {
         `Unassisted goal by ${scorer.name}`
     });
     
+    // Record the goal in database
     await gameModel.recordGameEvent(
       gameResult.lastID, 
       'goal', 
       scorer.id, 
       period, 
       `${minute}:${second}`, 
-      assist ? `Goal by ${scorer.name}, assisted by ${assist.name}` : `Unassisted goal by ${scorer.name}`
+      assist ? `Goal by ${scorer.name}, assisted by ${assist.name}` : `Unassisted goal by ${scorer.name}`,
+      guildId
     );
     
     // Update opposing goalie stats
     const awayGoalie = awayPlayers.find(p => p.position === 'goalie');
     if (awayGoalie) {
-      await playerModel.updatePlayerExtendedStats(awayGoalie.id, { 
+      await updateCharacterStats(awayGoalie.id, { 
         goals_against: 1,
         plus_minus: -1
-      });
+      }, guildId);
     }
   }
   
@@ -255,13 +258,13 @@ async function simulateGame(interaction) {
     const assist = Math.random() > 0.3 ? selectAssist(awaySkaters, scorer.id) : null;
     
     // Update stats for scorer
-    await playerModel.updatePlayerStats(scorer.id, 1, 0);
-    await playerModel.updatePlayerExtendedStats(scorer.id, { shots: 1, plus_minus: 1 });
+    await updateCharacterStats(scorer.id, { goals: 1, shots: 1, plus_minus: 1 }, guildId);
+    await incrementGamesPlayed(scorer.id, guildId);
     
     // Update stats for assist if there is one
     if (assist) {
-      await playerModel.updatePlayerStats(assist.id, 0, 1);
-      await playerModel.updatePlayerExtendedStats(assist.id, { plus_minus: 1 });
+      await updateCharacterStats(assist.id, { assists: 1, plus_minus: 1 }, guildId);
+      await incrementGamesPlayed(assist.id, guildId);
     }
     
     // Record the goal event
@@ -290,28 +293,30 @@ async function simulateGame(interaction) {
         `Unassisted goal by ${scorer.name}`
     });
     
+    // Record the goal in database
     await gameModel.recordGameEvent(
       gameResult.lastID, 
       'goal', 
       scorer.id, 
       period, 
       `${minute}:${second}`, 
-      assist ? `Goal by ${scorer.name}, assisted by ${assist.name}` : `Unassisted goal by ${scorer.name}`
+      assist ? `Goal by ${scorer.name}, assisted by ${assist.name}` : `Unassisted goal by ${scorer.name}`,
+      guildId
     );
     
     // Update opposing goalie stats
     const homeGoalie = homePlayers.find(p => p.position === 'goalie');
     if (homeGoalie) {
-      await playerModel.updatePlayerExtendedStats(homeGoalie.id, { 
+      await updateCharacterStats(homeGoalie.id, { 
         goals_against: 1,
         plus_minus: -1
-      });
+      }, guildId);
     }
   }
   
   // Update player games played
   for (const player of [...homePlayers, ...awayPlayers]) {
-    await playerModel.updatePlayerStats(player.id, 0, 0); // Just increment games played
+    await incrementGamesPlayed(player.id, guildId);
   }
   
   // Calculate goalie save percentages and update shutout stat
@@ -321,22 +326,22 @@ async function simulateGame(interaction) {
   if (homeGoalie) {
     // Calculate saves (shots against minus goals against)
     const savesCount = gameStats.away.shots - awayScore;
-    await playerModel.updatePlayerExtendedStats(homeGoalie.id, { saves: savesCount });
+    await updateCharacterStats(homeGoalie.id, { saves: savesCount }, guildId);
     
     // If shutout
     if (awayScore === 0) {
-      await playerModel.updatePlayerExtendedStats(homeGoalie.id, { shutouts: 1 });
+      await updateCharacterStats(homeGoalie.id, { shutouts: 1 }, guildId);
     }
   }
   
   if (awayGoalie) {
     // Calculate saves (shots against minus goals against)
     const savesCount = gameStats.home.shots - homeScore;
-    await playerModel.updatePlayerExtendedStats(awayGoalie.id, { saves: savesCount });
+    await updateCharacterStats(awayGoalie.id, { saves: savesCount }, guildId);
     
     // If shutout
     if (homeScore === 0) {
-      await playerModel.updatePlayerExtendedStats(awayGoalie.id, { shutouts: 1 });
+      await updateCharacterStats(awayGoalie.id, { shutouts: 1 }, guildId);
     }
   }
   
@@ -351,8 +356,8 @@ async function simulateGame(interaction) {
   });
   
   // Update team records for display
-  const updatedHomeTeam = await teamModel.getTeamById(homeTeam.id);
-  const updatedAwayTeam = await teamModel.getTeamById(awayTeam.id);
+  const updatedHomeTeam = await teamModel.getTeamById(homeTeam.id, guildId);
+  const updatedAwayTeam = await teamModel.getTeamById(awayTeam.id, guildId);
   
   // Create embed for game result
   const embed = new EmbedBuilder()
@@ -399,7 +404,7 @@ async function simulateGame(interaction) {
       
       try {
         // Record the playoff series result
-        const seriesResult = await seasonModel.recordPlayoffGame(seriesId, winningTeamId);
+        const seriesResult = await seasonModel.recordPlayoffGame(seriesId, winningTeamId, guildId);
         
         if (seriesResult.isComplete) {
           const winningTeam = winningTeamId === homeTeam.id ? 
@@ -428,7 +433,43 @@ async function simulateGame(interaction) {
   await interaction.editReply({ embeds: [embed] });
 }
 
-// Add this function to your simulateGame.js file
+// Helper function to update character stats
+async function updateCharacterStats(characterId, stats, guildId) {
+  try {
+    const db = require('../database/db').getDb(guildId);
+    
+    // Build the SQL dynamically based on provided stats
+    let updateFields = [];
+    let values = [];
+    
+    for (const [key, value] of Object.entries(stats)) {
+      if (value !== undefined && value !== null) {
+        updateFields.push(`${key} = COALESCE(${key}, 0) + ?`);
+        values.push(value);
+      }
+    }
+    
+    if (updateFields.length === 0) return null;
+    
+    // Add the character ID to values
+    values.push(characterId);
+    
+    return await db.run(
+      `UPDATE characters SET ${updateFields.join(', ')} WHERE id = ?`,
+      values
+    );
+  } catch (error) {
+    console.error(`Error updating character stats: ${error.message}`);
+    return null;
+  }
+}
+
+// Helper function to increment games played
+async function incrementGamesPlayed(characterId, guildId) {
+  return await updateCharacterStats(characterId, { games_played: 1 }, guildId);
+}
+
+// Generate hockey event
 function generateHockeyEvent(period, homePlayers, awayPlayers, isHomeTeam) {
   // Get the relevant team's players
   const teamPlayers = isHomeTeam ? homePlayers : awayPlayers;
