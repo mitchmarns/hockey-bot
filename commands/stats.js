@@ -1,5 +1,4 @@
 const { EmbedBuilder } = require('discord.js');
-const playerModel = require('../database/models/playerModel');
 
 async function stats(interaction) {
   const statType = interaction.options.getString('stattype') || 'points';
@@ -11,14 +10,54 @@ async function stats(interaction) {
   let title;
   
   try {
-    // Get players based on filters
+    // Get the database connection
+    const db = require('../database/db').getDb(guildId);
+    
+    // Build the base query
+    let query = `
+      SELECT c.*, t.name as team_name 
+      FROM characters c
+      JOIN teams t ON c.team_id = t.id
+      WHERE c.character_type = 'player' AND c.games_played > 0
+    `;
+    
+    let params = [];
+    
+    // Add team filter if specified
     if (teamName) {
-      players = await playerModel.getPlayerStatsByTeam(teamName, statType, limit, guildId);
+      query += ` AND t.name = ? COLLATE NOCASE`;
+      params.push(teamName);
       title = `${teamName} ${statType.charAt(0).toUpperCase() + statType.slice(1)} Leaders`;
     } else {
-      players = await playerModel.getPlayerStatsLeaders(statType, limit, guildId);
       title = `League ${statType.charAt(0).toUpperCase() + statType.slice(1)} Leaders`;
     }
+    
+    // Add ordering based on stat type
+    switch (statType) {
+      case 'goals':
+        query += ` ORDER BY c.goals DESC, c.assists DESC`;
+        break;
+      case 'assists':
+        query += ` ORDER BY c.assists DESC, c.goals DESC`;
+        break;
+      case 'games':
+        query += ` ORDER BY c.games_played DESC`;
+        break;
+      case 'ppg': // Points per game
+        query += ` ORDER BY (c.goals + c.assists) / CASE WHEN c.games_played > 0 THEN c.games_played ELSE 1 END DESC`;
+        break;
+      case 'points':
+      default:
+        query += ` ORDER BY (c.goals + c.assists) DESC, c.goals DESC`;
+        break;
+    }
+    
+    // Add limit
+    query += ` LIMIT ?`;
+    params.push(limit);
+    
+    // Execute the query
+    players = await db.all(query, params);
     
     if (players.length === 0) {
       return interaction.reply('No player statistics found. Try playing some games first!');
@@ -51,7 +90,8 @@ async function stats(interaction) {
         statDisplay = `${ppg} points per game`;
       }
       
-      leaderboardText += `${index + 1}. **${player.name}** (#${player.number}, ${player.position.replace('_', ' ')}) - ${statDisplay} - ${player.team_name}\n`;
+      const positionDisplay = player.position ? player.position.replace('_', ' ') : '';
+      leaderboardText += `${index + 1}. **${player.name}** ${player.jersey_number ? `(#${player.jersey_number}` : ''} ${positionDisplay ? `, ${positionDisplay}` : ''}) - ${statDisplay} - ${player.team_name}\n`;
     });
     
     embed.setDescription(leaderboardText);
