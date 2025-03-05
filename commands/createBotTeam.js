@@ -106,7 +106,7 @@ function generateSkills(position, teamSkillLevel) {
 }
 
 // Create a bot player and add to team
-async function createBotPlayer(teamId, teamSkillLevel, position, botUserId, usedNumbers) {
+async function createBotPlayer(teamId, teamSkillLevel, position, botUserId, usedNumbers, guildId) {
   try {
     // Generate random player details
     const name = generatePlayerName(position);
@@ -127,14 +127,16 @@ async function createBotPlayer(teamId, teamSkillLevel, position, botUserId, used
       number,
       teamId,
       botUserId,
-      null // No image URL
+      null, // No image URL
+      null, // No face claim
+      guildId
     );
     
     const playerId = playerResult.lastID;
     
     // Generate and set skills
     const skills = generateSkills(position, teamSkillLevel);
-    await skillsModel.setPlayerSkills(playerId, skills);
+    await skillsModel.setPlayerSkills(playerId, skills, guildId);
     
     return {
       id: playerId,
@@ -156,12 +158,20 @@ async function createBotTeam(interaction) {
     const city = interaction.options.getString('city');
     const logo = interaction.options.getString('logo') || null;
     const skillLevel = interaction.options.getInteger('skill') || 50;
+    const guildId = interaction.guildId;
+    
+    if (!guildId) {
+      return interaction.reply({ 
+        content: 'Guild ID not found. This command must be used in a server.',
+        ephemeral: true 
+      });
+    }
     
     // Mark this user ID as the bot controller (this will be needed to identify AI teams)
     const botUserId = 'BOT_CONTROLLER_' + interaction.user.id;
     
     // Check if team already exists
-    const existingTeam = await teamModel.getTeamByName(name);
+    const existingTeam = await teamModel.getTeamByName(name, guildId);
     if (existingTeam) {
       return interaction.reply(`Team "${name}" already exists.`);
     }
@@ -174,7 +184,7 @@ async function createBotTeam(interaction) {
     const teamName = `[BOT] ${name}`;
     
     try {
-      const teamResult = await teamModel.createTeam(teamName, city, logo);
+      const teamResult = await teamModel.createTeam(teamName, city, logo, guildId);
       const teamId = teamResult.lastID;
       console.log('Bot team created successfully with ID:', teamId);
       
@@ -186,31 +196,31 @@ async function createBotTeam(interaction) {
       
       // Add 2 goalies
       for (let i = 0; i < 2; i++) {
-        const goalie = await createBotPlayer(teamId, skillLevel, 'goalie', botUserId, usedNumbers);
+        const goalie = await createBotPlayer(teamId, skillLevel, 'goalie', botUserId, usedNumbers, guildId);
         players.push(goalie);
       }
       
       // Add 6 defensemen (3 pairs)
       for (let i = 0; i < 6; i++) {
-        const defenseman = await createBotPlayer(teamId, skillLevel, 'defenseman', botUserId, usedNumbers);
+        const defenseman = await createBotPlayer(teamId, skillLevel, 'defenseman', botUserId, usedNumbers, guildId);
         players.push(defenseman);
       }
       
       // Add 4 centers
       for (let i = 0; i < 4; i++) {
-        const center = await createBotPlayer(teamId, skillLevel, 'center', botUserId, usedNumbers);
+        const center = await createBotPlayer(teamId, skillLevel, 'center', botUserId, usedNumbers, guildId);
         players.push(center);
       }
       
       // Add 4 left wings
       for (let i = 0; i < 4; i++) {
-        const leftWing = await createBotPlayer(teamId, skillLevel, 'left_wing', botUserId, usedNumbers);
+        const leftWing = await createBotPlayer(teamId, skillLevel, 'left_wing', botUserId, usedNumbers, guildId);
         players.push(leftWing);
       }
       
       // Add 4 right wings
       for (let i = 0; i < 4; i++) {
-        const rightWing = await createBotPlayer(teamId, skillLevel, 'right_wing', botUserId, usedNumbers);
+        const rightWing = await createBotPlayer(teamId, skillLevel, 'right_wing', botUserId, usedNumbers, guildId);
         players.push(rightWing);
       }
       
