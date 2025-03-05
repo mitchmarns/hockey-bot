@@ -305,7 +305,8 @@ new SlashCommandBuilder()
     option.setName('series')
       .setDescription('Playoff series ID')
       .setRequired(true)),
-  new SlashCommandBuilder()
+
+new SlashCommandBuilder()
   .setName('instagram')
   .setDescription('Create an Instagram post for your character')
   .addStringOption(option => 
@@ -314,8 +315,20 @@ new SlashCommandBuilder()
       .setRequired(true))
   .addStringOption(option => 
     option.setName('image')
-      .setDescription('URL to image for the post')
+      .setDescription('URL to main image for the post')
       .setRequired(true))
+  .addStringOption(option => 
+    option.setName('image2')
+      .setDescription('URL to second image (optional)')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('image3')
+      .setDescription('URL to third image (optional)')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('image4')
+      .setDescription('URL to fourth image (optional)')
+      .setRequired(false))
   .addStringOption(option => 
     option.setName('caption')
       .setDescription('Caption for your post')
@@ -328,6 +341,7 @@ new SlashCommandBuilder()
     option.setName('location')
       .setDescription('Location tag (e.g., "Hockey Arena", "Downtown", "Team Practice Facility")')
       .setRequired(false)),
+
   new SlashCommandBuilder()
   .setName('createbotteam')
   .setDescription('Create an AI-controlled bot team with generated players')

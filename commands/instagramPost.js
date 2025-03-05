@@ -6,6 +6,9 @@ async function instagramPost(interaction) {
   try {
     const playerName = interaction.options.getString('player');
     const imageUrl = interaction.options.getString('image');
+    const image2Url = interaction.options.getString('image2') || null;
+    const image3Url = interaction.options.getString('image3') || null;
+    const image4Url = interaction.options.getString('image4') || null;
     const caption = interaction.options.getString('caption');
     const hashtags = interaction.options.getString('hashtags');
     const location = interaction.options.getString('location');
@@ -26,12 +29,23 @@ async function instagramPost(interaction) {
       });
     }
     
-    // Validate image URL
+    // Validate main image URL
     if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
       return interaction.reply({
         content: 'Please provide a valid image URL that starts with http:// or https://',
         ephemeral: true
       });
+    }
+    
+    // Validate additional images if provided
+    const additionalImages = [image2Url, image3Url, image4Url].filter(url => url !== null);
+    for (const url of additionalImages) {
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return interaction.reply({
+          content: `Invalid additional image URL: ${url}. All image URLs must start with http:// or https://`,
+          ephemeral: true
+        });
+      }
     }
     
     // Get team info for the player
@@ -97,6 +111,12 @@ async function instagramPost(interaction) {
       fullCaption += '\n\n' + formattedHashtags;
     }
     
+    // Add indicator for multiple images if applicable
+    const hasMultipleImages = additionalImages.length > 0;
+    if (hasMultipleImages) {
+      fullCaption += `\n\n📸 ${additionalImages.length + 1} images`;
+    }
+    
     if (fullCaption) {
       embed.setDescription(fullCaption);
     }
@@ -126,38 +146,96 @@ async function instagramPost(interaction) {
       { name: 'Recent Comments', value: `**${randomUser}**: ${randomComment}` }
     );
     
-    // Add footer with Instagram-like info
+    // Add footer with Instagram-like info and gallery indicator if multiple images
+    let footerText = `Instagram • ${new Date().toLocaleDateString()}`;
+    if (hasMultipleImages) {
+      footerText += ` • 1/${additionalImages.length + 1}`;
+    }
+    
     embed.setFooter({ 
-      text: `Instagram • ${new Date().toLocaleDateString()}`
+      text: footerText
     });
     
     // Create interactive buttons with post ID for tracking
     const postId = Date.now().toString(); // Simple timestamp-based ID for the post
-    const buttons = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId(`like_${postId}`)
-          .setLabel('❤️ Like')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId(`comment_${postId}`)
-          .setLabel('💬 Comment')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId(`share_${postId}`)
-          .setLabel('🔄 Share')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId(`save_${postId}`)
-          .setLabel('🔖 Save')
-          .setStyle(ButtonStyle.Secondary)
-      );
+    
+    // Create base buttons that will be used in all embeds
+    const createBaseButtons = () => {
+      return new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId(`like_${postId}`)
+            .setLabel('❤️ Like')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId(`comment_${postId}`)
+            .setLabel('💬 Comment')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId(`share_${postId}`)
+            .setLabel('🔄 Share')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId(`save_${postId}`)
+            .setLabel('🔖 Save')
+            .setStyle(ButtonStyle.Secondary)
+        );
+    };
+    
+    // Add navigation buttons if there are multiple images
+    let navButtons = null;
+    if (hasMultipleImages) {
+      navButtons = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId(`prev_${postId}`)
+            .setLabel('◀️ Previous')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true), // Initially disabled since we're on the first image
+          new ButtonBuilder()
+            .setCustomId(`next_${postId}`)
+            .setLabel('Next ▶️')
+            .setStyle(ButtonStyle.Primary)
+        );
+    }
+    
+    // Create an array of all embeds (main image and additional images)
+    const allEmbeds = [embed];
+    
+    // Create embeds for additional images
+    additionalImages.forEach((imgUrl, index) => {
+      const additionalEmbed = new EmbedBuilder()
+        .setColor('#E1306C')
+        .setAuthor({
+          name: `${player.name} (@${player.name.replace(/\s+/g, '_').toLowerCase()})`,
+          iconURL: player.image_url || null
+        })
+        .setTitle(locationDisplay)
+        .setImage(imgUrl)
+        .setDescription(fullCaption)
+        .addFields(
+          { name: '❤️ Likes', value: `${likeCount.toLocaleString()}`, inline: true },
+          { name: '💬 Comments', value: '21', inline: true },
+          { name: 'Recent Comments', value: `**${randomUser}**: ${randomComment}` }
+        )
+        .setFooter({ 
+          text: `Instagram • ${new Date().toLocaleDateString()} • ${index + 2}/${additionalImages.length + 1}`
+        })
+        .setTimestamp();
+      
+      allEmbeds.push(additionalEmbed);
+    });
     
     // Send the Instagram post to the channel and create a thread for interactions
+    const components = [createBaseButtons()];
+    if (navButtons) {
+      components.push(navButtons);
+    }
+    
     const response = await interaction.reply({ 
       content: `${player.name} shared a new Instagram post!`,
-      embeds: [embed],
-      components: [buttons]
+      embeds: [allEmbeds[0]],
+      components: components
     }).then(interactionResponse => interactionResponse.fetch());
     
     // Create a thread for interactions
@@ -166,14 +244,48 @@ async function instagramPost(interaction) {
       autoArchiveDuration: 1440 // Auto-archive after 1 day
     });
     
-    // Set up a collector for button interactions without user filtering
+    // Set up a collector for button interactions
     const collector = response.createMessageComponentCollector();
+    
+    // Keep track of current image index
+    let currentImageIndex = 0;
     
     collector.on('collect', async i => {
       // Get action type and post ID from the button's customId
       const [action, postId] = i.customId.split('_');
       
-      // Handle different button actions
+      // Handle navigation buttons
+      if (action === 'next' || action === 'prev') {
+        // Update the current image index
+        if (action === 'next') {
+          currentImageIndex = (currentImageIndex + 1) % allEmbeds.length;
+        } else {
+          currentImageIndex = (currentImageIndex - 1 + allEmbeds.length) % allEmbeds.length;
+        }
+        
+        // Update navigation buttons
+        const updatedNavButtons = new ActionRowBuilder()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId(`prev_${postId}`)
+              .setLabel('◀️ Previous')
+              .setStyle(ButtonStyle.Primary)
+              .setDisabled(currentImageIndex === 0), // Disable if we're on the first image
+            new ButtonBuilder()
+              .setCustomId(`next_${postId}`)
+              .setLabel('Next ▶️')
+              .setStyle(ButtonStyle.Primary)
+              .setDisabled(currentImageIndex === allEmbeds.length - 1) // Disable if we're on the last image
+          );
+        
+        // Update the message with the new embed and buttons
+        const updatedComponents = [createBaseButtons(), updatedNavButtons];
+        await i.update({ embeds: [allEmbeds[currentImageIndex]], components: updatedComponents });
+        
+        return;
+      }
+      
+      // Handle other button actions
       if (action === 'like') {
         // Show character selection modal
         await i.showModal({
