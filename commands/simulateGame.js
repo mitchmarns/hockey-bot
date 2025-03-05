@@ -448,6 +448,38 @@ async function simulateGame(interaction) {
   }
 }
 
+function selectPlayerBySkill(players, skillType) {
+  if (!players || players.length === 0) return null;
+  
+  // Sort players by the specified skill in descending order
+  const sortedPlayers = [...players].sort((a, b) => {
+    const skillA = a.skills?.[skillType] || 50;
+    const skillB = b.skills?.[skillType] || 50;
+    return skillB - skillA;
+  });
+  
+  // Add some randomness - 70% chance to pick from top 3 players in that skill
+  if (sortedPlayers.length >= 3 && Math.random() < 0.7) {
+    const topThreePlayers = sortedPlayers.slice(0, 3);
+    return topThreePlayers[Math.floor(Math.random() * topThreePlayers.length)];
+  }
+  
+  // Otherwise pick any player with weight to better skill
+  const totalWeight = sortedPlayers.reduce((sum, player) => sum + (player.skills?.[skillType] || 50), 0);
+  let random = Math.random() * totalWeight;
+  
+  for (const player of sortedPlayers) {
+    const weight = player.skills?.[skillType] || 50;
+    if (random <= weight) {
+      return player;
+    }
+    random -= weight;
+  }
+  
+  // Fallback to first player if something goes wrong
+  return sortedPlayers[0];
+}
+
 // Helper function to update player stats
 async function updatePlayerStats(playerId, stats, guildId) {
   try {
