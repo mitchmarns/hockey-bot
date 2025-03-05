@@ -1,76 +1,177 @@
-// Team lines-related database operations
+// Team lines-related database operations - Updated for character system compatibility
 const { getDb } = require('../db');
 
-// Get all forward lines for a team
+// Improved query to work with both character and player tables
 async function getForwardLines(teamId, guildId) {
   const db = getDb(guildId);
-  return await db.all(`
-    SELECT l.*, 
-      c.name as center_name, c.number as center_number,
-      lw.name as left_wing_name, lw.number as left_wing_number,
-      rw.name as right_wing_name, rw.number as right_wing_number
-    FROM team_lines l
-    LEFT JOIN players c ON l.center_id = c.id
-    LEFT JOIN players lw ON l.left_wing_id = lw.id
-    LEFT JOIN players rw ON l.right_wing_id = rw.id
-    WHERE l.team_id = ? AND l.line_type = 'forward'
-    ORDER BY l.line_number
-  `, [teamId]);
+  
+  try {
+    // First attempt using the new characters table
+    return await db.all(`
+      SELECT l.*, 
+        c1.name as center_name, c1.jersey_number as center_number,
+        c2.name as left_wing_name, c2.jersey_number as left_wing_number,
+        c3.name as right_wing_name, c3.jersey_number as right_wing_number
+      FROM team_lines l
+      LEFT JOIN characters c1 ON l.center_id = c1.id
+      LEFT JOIN characters c2 ON l.left_wing_id = c2.id
+      LEFT JOIN characters c3 ON l.right_wing_id = c3.id
+      WHERE l.team_id = ? AND l.line_type = 'forward'
+      ORDER BY l.line_number
+    `, [teamId]);
+  } catch (error) {
+    console.log('Error querying with characters table, falling back to players:', error);
+    
+    // Fallback to players table for backward compatibility
+    try {
+      return await db.all(`
+        SELECT l.*, 
+          p1.name as center_name, p1.number as center_number,
+          p2.name as left_wing_name, p2.number as left_wing_number,
+          p3.name as right_wing_name, p3.number as right_wing_number
+        FROM team_lines l
+        LEFT JOIN players p1 ON l.center_id = p1.id
+        LEFT JOIN players p2 ON l.left_wing_id = p2.id
+        LEFT JOIN players p3 ON l.right_wing_id = p3.id
+        WHERE l.team_id = ? AND l.line_type = 'forward'
+        ORDER BY l.line_number
+      `, [teamId]);
+    } catch (fallbackError) {
+      console.error('Both queries failed:', fallbackError);
+      return [];
+    }
+  }
 }
 
-// Get all defense pairs for a team
+// Improved query to work with both character and player tables
 async function getDefensePairs(teamId, guildId) {
   const db = getDb(guildId);
-  return await db.all(`
-    SELECT l.*, 
-      d1.name as defense1_name, d1.number as defense1_number,
-      d2.name as defense2_name, d2.number as defense2_number
-    FROM team_lines l
-    LEFT JOIN players d1 ON l.defense1_id = d1.id
-    LEFT JOIN players d2 ON l.defense2_id = d2.id
-    WHERE l.team_id = ? AND l.line_type = 'defense'
-    ORDER BY l.line_number
-  `, [teamId]);
+  
+  try {
+    // First attempt using the new characters table
+    return await db.all(`
+      SELECT l.*, 
+        c1.name as defense1_name, c1.jersey_number as defense1_number,
+        c2.name as defense2_name, c2.jersey_number as defense2_number
+      FROM team_lines l
+      LEFT JOIN characters c1 ON l.defense1_id = c1.id
+      LEFT JOIN characters c2 ON l.defense2_id = c2.id
+      WHERE l.team_id = ? AND l.line_type = 'defense'
+      ORDER BY l.line_number
+    `, [teamId]);
+  } catch (error) {
+    console.log('Error querying with characters table, falling back to players:', error);
+    
+    // Fallback to players table for backward compatibility
+    try {
+      return await db.all(`
+        SELECT l.*, 
+          p1.name as defense1_name, p1.number as defense1_number,
+          p2.name as defense2_name, p2.number as defense2_number
+        FROM team_lines l
+        LEFT JOIN players p1 ON l.defense1_id = p1.id
+        LEFT JOIN players p2 ON l.defense2_id = p2.id
+        WHERE l.team_id = ? AND l.line_type = 'defense'
+        ORDER BY l.line_number
+      `, [teamId]);
+    } catch (fallbackError) {
+      console.error('Both queries failed:', fallbackError);
+      return [];
+    }
+  }
 }
 
-// Get special teams units (powerplay, penalty kill)
+// Improved query to work with both character and player tables
 async function getSpecialTeamsLines(teamId, lineType, guildId) {
   const db = getDb(guildId);
-  return await db.all(`
-    SELECT l.*, 
-      c.name as center_name, c.number as center_number,
-      lw.name as left_wing_name, lw.number as left_wing_number,
-      rw.name as right_wing_name, rw.number as right_wing_number,
-      d1.name as defense1_name, d1.number as defense1_number,
-      d2.name as defense2_name, d2.number as defense2_number
-    FROM team_lines l
-    LEFT JOIN players c ON l.center_id = c.id
-    LEFT JOIN players lw ON l.left_wing_id = lw.id
-    LEFT JOIN players rw ON l.right_wing_id = rw.id
-    LEFT JOIN players d1 ON l.defense1_id = d1.id
-    LEFT JOIN players d2 ON l.defense2_id = d2.id
-    WHERE l.team_id = ? AND l.line_type = ?
-    ORDER BY l.line_number
-  `, [teamId, lineType]);
+  
+  try {
+    // First attempt using the new characters table
+    return await db.all(`
+      SELECT l.*, 
+        c1.name as center_name, c1.jersey_number as center_number,
+        c2.name as left_wing_name, c2.jersey_number as left_wing_number,
+        c3.name as right_wing_name, c3.jersey_number as right_wing_number,
+        c4.name as defense1_name, c4.jersey_number as defense1_number,
+        c5.name as defense2_name, c5.jersey_number as defense2_number
+      FROM team_lines l
+      LEFT JOIN characters c1 ON l.center_id = c1.id
+      LEFT JOIN characters c2 ON l.left_wing_id = c2.id
+      LEFT JOIN characters c3 ON l.right_wing_id = c3.id
+      LEFT JOIN characters c4 ON l.defense1_id = c4.id
+      LEFT JOIN characters c5 ON l.defense2_id = c5.id
+      WHERE l.team_id = ? AND l.line_type = ?
+      ORDER BY l.line_number
+    `, [teamId, lineType]);
+  } catch (error) {
+    console.log('Error querying with characters table, falling back to players:', error);
+    
+    // Fallback to players table for backward compatibility
+    try {
+      return await db.all(`
+        SELECT l.*, 
+          p1.name as center_name, p1.number as center_number,
+          p2.name as left_wing_name, p2.number as left_wing_number,
+          p3.name as right_wing_name, p3.number as right_wing_number,
+          p4.name as defense1_name, p4.number as defense1_number,
+          p5.name as defense2_name, p5.number as defense2_number
+        FROM team_lines l
+        LEFT JOIN players p1 ON l.center_id = p1.id
+        LEFT JOIN players p2 ON l.left_wing_id = p2.id
+        LEFT JOIN players p3 ON l.right_wing_id = p3.id
+        LEFT JOIN players p4 ON l.defense1_id = p4.id
+        LEFT JOIN players p5 ON l.defense2_id = p5.id
+        WHERE l.team_id = ? AND l.line_type = ?
+        ORDER BY l.line_number
+      `, [teamId, lineType]);
+    } catch (fallbackError) {
+      console.error('Both queries failed:', fallbackError);
+      return [];
+    }
+  }
 }
 
-// Get goalie rotation
+// Improved query to work with both character and player tables
 async function getGoalieRotation(teamId, guildId) {
   const db = getDb(guildId);
-  return await db.get(`
-    SELECT gr.*,
-      s.name as starter_name, s.number as starter_number,
-      b.name as backup_name, b.number as backup_number,
-      t.name as third_string_name, t.number as third_string_number
-    FROM goalie_rotation gr
-    LEFT JOIN players s ON gr.starter_id = s.id
-    LEFT JOIN players b ON gr.backup_id = b.id
-    LEFT JOIN players t ON gr.third_string_id = t.id
-    WHERE gr.team_id = ?
-  `, [teamId]);
+  
+  try {
+    // First attempt using the new characters table
+    return await db.get(`
+      SELECT gr.*,
+        c1.name as starter_name, c1.jersey_number as starter_number,
+        c2.name as backup_name, c2.jersey_number as backup_number,
+        c3.name as third_string_name, c3.jersey_number as third_string_number
+      FROM goalie_rotation gr
+      LEFT JOIN characters c1 ON gr.starter_id = c1.id
+      LEFT JOIN characters c2 ON gr.backup_id = c2.id
+      LEFT JOIN characters c3 ON gr.third_string_id = c3.id
+      WHERE gr.team_id = ?
+    `, [teamId]);
+  } catch (error) {
+    console.log('Error querying with characters table, falling back to players:', error);
+    
+    // Fallback to players table for backward compatibility
+    try {
+      return await db.get(`
+        SELECT gr.*,
+          p1.name as starter_name, p1.number as starter_number,
+          p2.name as backup_name, p2.number as backup_number,
+          p3.name as third_string_name, p3.number as third_string_number
+        FROM goalie_rotation gr
+        LEFT JOIN players p1 ON gr.starter_id = p1.id
+        LEFT JOIN players p2 ON gr.backup_id = p2.id
+        LEFT JOIN players p3 ON gr.third_string_id = p3.id
+        WHERE gr.team_id = ?
+      `, [teamId]);
+    } catch (fallbackError) {
+      console.error('Both queries failed:', fallbackError);
+      return null;
+    }
+  }
 }
 
-// Set a forward line
+// Set a forward line - unchanged as it just needs IDs
 async function setForwardLine(teamId, lineNumber, centerId, leftWingId, rightWingId, coachUserId, guildId) {
   const db = getDb(guildId);
   
@@ -100,7 +201,7 @@ async function setForwardLine(teamId, lineNumber, centerId, leftWingId, rightWin
   }
 }
 
-// Set a defense pair
+// Set a defense pair - unchanged as it just needs IDs
 async function setDefensePair(teamId, pairNumber, defense1Id, defense2Id, coachUserId, guildId) {
   const db = getDb(guildId);
   
@@ -130,7 +231,7 @@ async function setDefensePair(teamId, pairNumber, defense1Id, defense2Id, coachU
   }
 }
 
-// Set a special teams unit (powerplay or penalty kill)
+// Set a special teams unit (powerplay or penalty kill) - unchanged as it just needs IDs
 async function setSpecialTeamsLine(teamId, lineType, unitNumber, playerId1, playerId2, playerId3, playerId4, playerId5, coachUserId, guildId) {
   const db = getDb(guildId);
   
@@ -161,7 +262,7 @@ async function setSpecialTeamsLine(teamId, lineType, unitNumber, playerId1, play
   }
 }
 
-// Set goalie rotation
+// Set goalie rotation - unchanged as it just needs IDs
 async function setGoalieRotation(teamId, starterId, backupId, thirdStringId, coachUserId, guildId) {
   const db = getDb(guildId);
   

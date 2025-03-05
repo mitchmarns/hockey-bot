@@ -1,7 +1,7 @@
-// Set Lines command handler
+// Set Lines command handler - Updated for character system compatibility
 const { EmbedBuilder } = require('discord.js');
 const teamModel = require('../database/models/teamModel');
-const playerModel = require('../database/models/playerModel');
+const characterModel = require('../database/models/characterModel');
 const coachModel = require('../database/models/coachModel');
 const linesModel = require('../database/models/linesModel');
 
@@ -36,10 +36,10 @@ async function setLines(interaction) {
     let updateResult;
     
     if (lineType === 'forward') {
-      // Get player IDs for the forward line
-      const player1 = await getPlayerIfValid(player1Name, team.id, 'center', guildId);
-      const player2 = await getPlayerIfValid(player2Name, team.id, 'left_wing', guildId);
-      const player3 = await getPlayerIfValid(player3Name, team.id, 'right_wing', guildId);
+      // Get character IDs for the forward line
+      const player1 = await getCharacterIfValid(player1Name, team.id, 'center', guildId);
+      const player2 = await getCharacterIfValid(player2Name, team.id, 'left_wing', guildId);
+      const player3 = await getCharacterIfValid(player3Name, team.id, 'right_wing', guildId);
       
       if (!player1 || !player2 || !player3) {
         return interaction.reply('One or more players not found or not in the correct position.');
@@ -57,9 +57,9 @@ async function setLines(interaction) {
       );
     } 
     else if (lineType === 'defense') {
-      // Get player IDs for the defense pair
-      const player1 = await getPlayerIfValid(player1Name, team.id, 'defenseman', guildId);
-      const player2 = await getPlayerIfValid(player2Name, team.id, 'defenseman', guildId);
+      // Get character IDs for the defense pair
+      const player1 = await getCharacterIfValid(player1Name, team.id, 'defenseman', guildId);
+      const player2 = await getCharacterIfValid(player2Name, team.id, 'defenseman', guildId);
       
       if (!player1 || !player2) {
         return interaction.reply('One or more players not found or not in the correct position.');
@@ -82,11 +82,11 @@ async function setLines(interaction) {
       }
       
       // Get all players - for special teams, position restrictions are more flexible
-      const player1 = await getPlayerIfOnTeam(player1Name, team.id, guildId);
-      const player2 = await getPlayerIfOnTeam(player2Name, team.id, guildId);
-      const player3 = await getPlayerIfOnTeam(player3Name, team.id, guildId);
-      const player4 = await getPlayerIfOnTeam(player4Name, team.id, guildId);
-      const player5 = await getPlayerIfOnTeam(player5Name, team.id, guildId);
+      const player1 = await getCharacterIfOnTeam(player1Name, team.id, guildId);
+      const player2 = await getCharacterIfOnTeam(player2Name, team.id, guildId);
+      const player3 = await getCharacterIfOnTeam(player3Name, team.id, guildId);
+      const player4 = await getCharacterIfOnTeam(player4Name, team.id, guildId);
+      const player5 = await getCharacterIfOnTeam(player5Name, team.id, guildId);
       
       if (!player1 || !player2 || !player3 || !player4 || !player5) {
         return interaction.reply('One or more players not found or not on this team.');
@@ -107,22 +107,22 @@ async function setLines(interaction) {
       );
     }
     else if (lineType === 'goalie') {
-      // Get player IDs for the goalie rotation
-      const starter = await getPlayerIfValid(player1Name, team.id, 'goalie', guildId);
+      // Get character IDs for the goalie rotation
+      const starter = await getCharacterIfValid(player1Name, team.id, 'goalie', guildId);
       
       // Backup and third string are optional
       let backup = null;
       let thirdString = null;
       
       if (player2Name) {
-        backup = await getPlayerIfValid(player2Name, team.id, 'goalie', guildId);
+        backup = await getCharacterIfValid(player2Name, team.id, 'goalie', guildId);
         if (!backup) {
           return interaction.reply(`Player "${player2Name}" is not a goalie on this team.`);
         }
       }
       
       if (player3Name) {
-        thirdString = await getPlayerIfValid(player3Name, team.id, 'goalie', guildId);
+        thirdString = await getCharacterIfValid(player3Name, team.id, 'goalie', guildId);
         if (!thirdString) {
           return interaction.reply(`Player "${player3Name}" is not a goalie on this team.`);
         }
@@ -206,29 +206,70 @@ async function setLines(interaction) {
   }
 }
 
-// Helper function to get a player if they're on the team and in the correct position
-async function getPlayerIfValid(playerName, teamId, position, guildId) {
-  if (!playerName) return null;
+// Helper function to get a character if they're on the team and in the correct position
+async function getCharacterIfValid(characterName, teamId, position, guildId) {
+  if (!characterName) return null;
   
-  const player = await playerModel.getPlayerByName(playerName, guildId);
-  if (!player) return null;
-  
-  if (player.team_id !== teamId) return null;
-  if (player.position !== position) return null;
-  
-  return player;
+  try {
+    // First try the new character model
+    const character = await characterModel.getCharacterByName(characterName, guildId);
+    
+    if (character) {
+      // Check if this is a player character on the right team with the right position
+      if (character.character_type === 'player' && 
+          character.team_id === teamId && 
+          character.position === position) {
+        return character;
+      }
+      
+      return null;
+    }
+    
+    // Fallback to old player model for backward compatibility
+    const playerModel = require('../database/models/playerModel');
+    const player = await playerModel.getPlayerByName(characterName, guildId);
+    
+    if (player && player.team_id === teamId && player.position === position) {
+      return player;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error finding character ${characterName}:`, error);
+    return null;
+  }
 }
 
-// Helper function to get a player if they're on the team (position doesn't matter)
-async function getPlayerIfOnTeam(playerName, teamId, guildId) {
-  if (!playerName) return null;
+// Helper function to get a character if they're on the team (position doesn't matter)
+async function getCharacterIfOnTeam(characterName, teamId, guildId) {
+  if (!characterName) return null;
   
-  const player = await playerModel.getPlayerByName(playerName, guildId);
-  if (!player) return null;
-  
-  if (player.team_id !== teamId) return null;
-  
-  return player;
+  try {
+    // First try the new character model
+    const character = await characterModel.getCharacterByName(characterName, guildId);
+    
+    if (character) {
+      // Check if this is a player character on the right team
+      if (character.character_type === 'player' && character.team_id === teamId) {
+        return character;
+      }
+      
+      return null;
+    }
+    
+    // Fallback to old player model for backward compatibility
+    const playerModel = require('../database/models/playerModel');
+    const player = await playerModel.getPlayerByName(characterName, guildId);
+    
+    if (player && player.team_id === teamId) {
+      return player;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error finding character ${characterName}:`, error);
+    return null;
+  }
 }
 
 module.exports = setLines;
