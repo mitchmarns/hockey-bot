@@ -33,6 +33,7 @@ const characterInfo = require('./characterInfo');
 const teamRoster = require('./teamRoster');
 const myCharacters = require('./myCharacters');
 const deleteCharacter = require('./deleteCharacter');
+const fixTeamNames = require('./fixTeamNames');
 
 // Export all handlers as a single object
 module.exports = {
@@ -69,5 +70,6 @@ module.exports = {
   characterinfo: characterInfo,
   teamroster: teamRoster,
   mycharacters: myCharacters,
-  deletecharacter: deleteCharacter
+  deletecharacter: deleteCharacter,
+  fixteamnames: fixTeamNames
 };

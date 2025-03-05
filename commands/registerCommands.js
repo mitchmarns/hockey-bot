@@ -536,7 +536,11 @@ new SlashCommandBuilder()
   .addStringOption(option => 
     option.setName('name')
       .setDescription('Character name')
-      .setRequired(true))
+      .setRequired(true)),
+      
+new SlashCommandBuilder()
+  .setName('fixteamnames')
+  .setDescription('Fix whitespace and case issues in team names'),
 ];
 
 async function registerCommands() {
