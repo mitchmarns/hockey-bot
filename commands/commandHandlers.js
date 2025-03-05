@@ -28,6 +28,11 @@ const coachInfo = require('./coachInfo');
 const coachingStaff = require('./coachingStaff');
 const setLines = require('./setLines');
 const viewLines = require('./viewLines');
+const createCharacter = require('./createCharacter');
+const characterInfo = require('./characterInfo');
+const teamRoster = require('./teamRoster');
+const myCharacters = require('./myCharacters');
+const deleteCharacter = require('./deleteCharacter');
 
 // Export all handlers as a single object
 module.exports = {
@@ -60,4 +65,9 @@ module.exports = {
   coachingstaff: coachingStaff,
   setlines: setLines,
   viewlines: viewLines,
+  createcharacter: createCharacter,
+  characterinfo: characterInfo,
+  teamroster: teamRoster,
+  mycharacters: myCharacters,
+  deletecharacter: deleteCharacter
 };
