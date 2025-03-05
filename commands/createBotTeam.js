@@ -1,4 +1,4 @@
-// Create Bot Team command handler
+// Create Bot Team command handler (Fixed for simulation compatibility)
 const { EmbedBuilder } = require('discord.js');
 const teamModel = require('../database/models/teamModel');
 const playerModel = require('../database/models/playerModel');
@@ -82,7 +82,6 @@ function generateSkills(position, teamSkillLevel) {
     case 'center':
       skills.passing = genSkill(10);  // Centers are better at passing
       skills.skating = genSkill(5);   // Centers are good skaters
-      skills.faceoffs = genSkill(15); // Centers are good at faceoffs
       break;
     case 'left_wing':
     case 'right_wing':
@@ -120,19 +119,36 @@ async function createBotPlayer(teamId, teamSkillLevel, position, botUserId, used
     // Mark this number as used
     usedNumbers.add(number);
     
-    // Create the player
-    const playerResult = await playerModel.createPlayer(
-      name,
-      position,
-      number,
-      teamId,
-      botUserId,
-      null, // No image URL
-      null, // No face claim
-      guildId
-    );
+    // Initialize player with default stats
+    const playerData = {
+      name: name,
+      position: position,
+      number: number,
+      team_id: teamId,
+      user_id: botUserId,
+      image_url: null,
+      face_claim: null,
+      goals: 0,
+      assists: 0,
+      games_played: 0,
+      plus_minus: 0,
+      penalty_minutes: 0,
+      shots: 0,
+      blocks: 0,
+      hits: 0,
+      faceoff_wins: 0,
+      faceoff_losses: 0
+    };
     
-    const playerId = playerResult.lastID;
+    // For goalies, add goalie specific stats
+    if (position === 'goalie') {
+      playerData.saves = 0;
+      playerData.goals_against = 0;
+      playerData.shutouts = 0;
+    }
+    
+    // Create the player - using custom function to ensure all fields are set
+    const playerId = await createFullPlayerRecord(playerData, guildId);
     
     // Generate and set skills
     const skills = generateSkills(position, teamSkillLevel);
@@ -149,6 +165,23 @@ async function createBotPlayer(teamId, teamSkillLevel, position, botUserId, used
     console.error('Error creating bot player:', error);
     throw error;
   }
+}
+
+// Custom function to create a full player record with all fields required for simulation
+async function createFullPlayerRecord(playerData, guildId) {
+  const db = require('../database/db').getDb(guildId);
+  
+  // Create SQL statement with all fields needed for simulation
+  const fieldNames = Object.keys(playerData).join(', ');
+  const placeholders = Object.keys(playerData).map(() => '?').join(', ');
+  const values = Object.values(playerData);
+  
+  const result = await db.run(
+    `INSERT INTO players (${fieldNames}) VALUES (${placeholders})`,
+    values
+  );
+  
+  return result.lastID;
 }
 
 async function createBotTeam(interaction) {
@@ -184,7 +217,20 @@ async function createBotTeam(interaction) {
     const teamName = `[BOT] ${name}`;
     
     try {
-      const teamResult = await teamModel.createTeam(teamName, city, logo, guildId);
+      // Create the team with all required fields
+      const teamData = {
+        name: teamName,
+        city: city,
+        logo: logo,
+        wins: 0,
+        losses: 0,
+        ties: 0,
+        goals_for: 0,
+        goals_against: 0
+      };
+      
+      // Use custom function to create team with all fields
+      const teamResult = await createFullTeamRecord(teamData, guildId);
       const teamId = teamResult.lastID;
       console.log('Bot team created successfully with ID:', teamId);
       
@@ -279,6 +325,23 @@ async function createBotTeam(interaction) {
       });
     }
   }
+}
+
+// Custom function to create a full team record with all fields
+async function createFullTeamRecord(teamData, guildId) {
+  const db = require('../database/db').getDb(guildId);
+  
+  // Create SQL statement with all provided fields
+  const fieldNames = Object.keys(teamData).join(', ');
+  const placeholders = Object.keys(teamData).map(() => '?').join(', ');
+  const values = Object.values(teamData);
+  
+  const result = await db.run(
+    `INSERT INTO teams (${fieldNames}) VALUES (${placeholders})`,
+    values
+  );
+  
+  return result;
 }
 
 module.exports = createBotTeam;
