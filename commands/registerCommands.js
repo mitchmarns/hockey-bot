@@ -306,41 +306,41 @@ new SlashCommandBuilder()
       .setDescription('Playoff series ID')
       .setRequired(true)),
 
-      new SlashCommandBuilder()
-      .setName('instagram')
-      .setDescription('Create an Instagram post for your character')
-      .addStringOption(option => 
-        option.setName('player')
-          .setDescription('Your player name')
-          .setRequired(true))
-      .addStringOption(option => 
-        option.setName('image')
-          .setDescription('URL to main image for the post')
-          .setRequired(true))
-      .addStringOption(option => 
-        option.setName('caption')
-          .setDescription('Caption for your post')
-          .setRequired(true))
-      .addStringOption(option => 
-        option.setName('image2')
-          .setDescription('URL to second image (optional)')
-          .setRequired(false))
-      .addStringOption(option => 
-        option.setName('image3')
-          .setDescription('URL to third image (optional)')
-          .setRequired(false))
-      .addStringOption(option => 
-        option.setName('image4')
-          .setDescription('URL to fourth image (optional)')
-          .setRequired(false))
-      .addStringOption(option => 
-        option.setName('hashtags')
-          .setDescription('Hashtags (comma separated)')
-          .setRequired(false))
-      .addStringOption(option => 
-        option.setName('location')
-          .setDescription('Location tag (e.g., "Hockey Arena", "Downtown", "Team Practice Facility")')
-          .setRequired(false)),
+  new SlashCommandBuilder()
+    .setName('instagram')
+    .setDescription('Create an Instagram post for your character')
+    .addStringOption(option => 
+      option.setName('player')
+        .setDescription('Your player name')
+        .setRequired(true))
+    .addStringOption(option => 
+      option.setName('image')
+        .setDescription('URL to main image for the post')
+        .setRequired(true))
+    .addStringOption(option => 
+      option.setName('caption')
+        .setDescription('Caption for your post')
+        .setRequired(true))
+    .addStringOption(option => 
+      option.setName('image2')
+        .setDescription('URL to second image (optional)')
+        .setRequired(false))
+    .addStringOption(option => 
+      option.setName('image3')
+        .setDescription('URL to third image (optional)')
+        .setRequired(false))
+    .addStringOption(option => 
+      option.setName('image4')
+        .setDescription('URL to fourth image (optional)')
+        .setRequired(false))
+    .addStringOption(option => 
+      option.setName('hashtags')
+        .setDescription('Hashtags (comma separated)')
+        .setRequired(false))
+    .addStringOption(option => 
+      option.setName('location')
+        .setDescription('Location tag (e.g., "Hockey Arena", "Downtown", "Team Practice Facility")')
+        .setRequired(false)),
 
   new SlashCommandBuilder()
   .setName('createbotteam')
@@ -363,7 +363,6 @@ new SlashCommandBuilder()
       .setMinValue(1)
       .setMaxValue(100)
       .setRequired(false)),
-      new SlashCommandBuilder(),
 
 // Lines management commands
 new SlashCommandBuilder()
