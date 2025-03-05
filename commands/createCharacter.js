@@ -21,7 +21,10 @@ async function createCharacter(interaction) {
     const guildId = interaction.guildId;
     
     // Find team
+    console.log(`Searching for team: ${teamName}`);
     const team = await teamModel.getTeamByName(teamName, guildId);
+    console.log('Team found:', team);
+
     if (!team) {
       return await interaction.editReply(`Team "${teamName}" doesn't exist.`);
     }
@@ -54,7 +57,9 @@ async function createCharacter(interaction) {
     }
     
     // Create the character with all relevant fields
+    console.log('Creating character...');
     await characterModel.createCharacter(characterData);
+    console.log('Character created!');
     
     // Create embed for response
     const embed = new EmbedBuilder()
