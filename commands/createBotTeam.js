@@ -5,34 +5,54 @@ const playerModel = require('../database/models/playerModel');
 const skillsModel = require('../database/models/skillsModel');
 const { POSITIONS } = require('../config/config');
 
-// List of AI first names
+// Lists of realistic fictional hockey player first names
 const firstNames = [
-  'Alex', 'Blake', 'Casey', 'Dana', 'Eddie', 'Finn', 'Glenn', 'Hayden', 'Igor', 
-  'Jaime', 'Kelly', 'Logan', 'Morgan', 'Nico', 'Owen', 'Parker', 'Quinn', 'Riley', 
-  'Sage', 'Taylor', 'Valor', 'Whitney', 'Xavier', 'Yuri', 'Zephyr'
+  // North American style
+  'Mike', 'Chris', 'Scott', 'Steve', 'Kevin', 'Dave', 'Jason', 'Brian', 'Brandon',
+  'Eric', 'Keith', 'Jeff', 'Justin', 'Mark', 'Matt', 'Ryan', 'Adam', 'Shane',
+  'Cody', 'Travis', 'Brett', 'Greg', 'Derek', 'Jordan', 'Josh', 'Brad', 'Drew',
+  
+  // European/Scandinavian style
+  'Anders', 'Erik', 'Niklas', 'Jonas', 'Fredrik', 'Mattias', 'Lars', 'Mikael', 
+  'Peter', 'Thomas', 'Jakub', 'Josef', 'Karel', 'Lukas', 'Martin', 'Jan', 'Pavel', 
+  'Michal', 'Igor', 'Viktor', 'Anton', 'Dmitri', 'Sergei', 'Nikolai', 'Mikhail',
+  
+  // Canadian/French style
+  'Jean', 'Marc', 'Pierre', 'Michel', 'Andre', 'Claude', 'Francois', 'Louis', 
+  'Denis', 'Gilbert', 'Yves', 'Guy', 'Alain', 'Benoit', 'Patrice', 'Stephane', 
+  'Richard', 'Philippe', 'Daniel', 'Vincent', 'Luc', 'Christian', 'Robert', 'Pascal'
 ];
 
-// List of AI last names
+// Lists of realistic fictional hockey player last names
 const lastNames = [
-  'Anderson', 'Botson', 'Cyberman', 'Digital', 'Electronic', 'Firmware', 'Grid', 
-  'Hologram', 'Interface', 'JSON', 'Kernel', 'Logic', 'Mainframe', 'Network', 
-  'Output', 'Processor', 'Query', 'Router', 'System', 'Tron', 'Unit', 'Virtual', 
-  'Wire', 'Xenon', 'Zero', 'Binary', 'Circuit', 'Delta', 'Synth'
+  // North American style
+  'Wilson', 'Johnson', 'Brown', 'Miller', 'Davis', 'Thompson', 'White', 'Clark', 
+  'Allen', 'Harris', 'King', 'Lewis', 'Walker', 'Young', 'Hall', 'Roberts', 'Baker', 
+  'Ross', 'Parker', 'Cook', 'Cooper', 'Ward', 'Fisher', 'Kelly', 'Mitchell', 'Wood',
+  
+  // European/Scandinavian style
+  'Lindgren', 'Andersson', 'Karlsson', 'Nilsson', 'Eriksson', 'Larsson', 'Johansson',
+  'Koivu', 'Virtanen', 'Lehtonen', 'Salomaki', 'Kovalchuk', 'Volkov', 'Petrov', 
+  'Makarov', 'Ivanov', 'Novak', 'Svoboda', 'Holzer', 'Mueller', 'Wagner', 'Fischer',
+  
+  // Canadian/French style
+  'Tremblay', 'Gagnon', 'Bouchard', 'Gauthier', 'Morin', 'Lavoie', 'Fortin', 
+  'Gagne', 'Pelletier', 'Beaulieu', 'Deschamps', 'Poirier', 'Demers', 'Leclerc', 
+  'Dubois', 'Marchand', 'Richard', 'Lapierre', 'Belanger', 'Boucher', 'Lefebvre'
 ];
 
-// Special AI prefix for player names to differentiate them
-const AI_PREFIX = '[AI] ';
-
-// Generate a random AI name
-function generateAIName() {
+// Generate a realistic hockey player name
+function generatePlayerName(position) {
   const first = firstNames[Math.floor(Math.random() * firstNames.length)];
   const last = lastNames[Math.floor(Math.random() * lastNames.length)];
-  return `${AI_PREFIX}${first} ${last}`;
+  
+  return `${first} ${last}`;
 }
 
 // Generate a random jersey number (1-99)
 function generateNumber() {
-  return Math.floor(Math.random() * 99) + 1;
+  // Avoid duplication in a team by generating a unique set of numbers
+  return Math.floor(Math.random() * 98) + 1;
 }
 
 // Generate skill levels based on position and specified team skill level
@@ -62,6 +82,7 @@ function generateSkills(position, teamSkillLevel) {
     case 'center':
       skills.passing = genSkill(10);  // Centers are better at passing
       skills.skating = genSkill(5);   // Centers are good skaters
+      skills.faceoffs = genSkill(15); // Centers are good at faceoffs
       break;
     case 'left_wing':
     case 'right_wing':
@@ -85,11 +106,19 @@ function generateSkills(position, teamSkillLevel) {
 }
 
 // Create a bot player and add to team
-async function createBotPlayer(teamId, teamSkillLevel, position, botUserId) {
+async function createBotPlayer(teamId, teamSkillLevel, position, botUserId, usedNumbers) {
   try {
     // Generate random player details
-    const name = generateAIName();
-    const number = generateNumber();
+    const name = generatePlayerName(position);
+    
+    // Generate a unique number that hasn't been used yet
+    let number;
+    do {
+      number = generateNumber();
+    } while (usedNumbers.has(number));
+    
+    // Mark this number as used
+    usedNumbers.add(number);
     
     // Create the player
     const playerResult = await playerModel.createPlayer(
@@ -149,36 +178,39 @@ async function createBotTeam(interaction) {
       const teamId = teamResult.lastID;
       console.log('Bot team created successfully with ID:', teamId);
       
+      // Track used numbers to avoid duplicates
+      const usedNumbers = new Set();
+      
       // Create players for each position
       const players = [];
       
       // Add 2 goalies
       for (let i = 0; i < 2; i++) {
-        const goalie = await createBotPlayer(teamId, skillLevel, 'goalie', botUserId);
+        const goalie = await createBotPlayer(teamId, skillLevel, 'goalie', botUserId, usedNumbers);
         players.push(goalie);
       }
       
       // Add 6 defensemen (3 pairs)
       for (let i = 0; i < 6; i++) {
-        const defenseman = await createBotPlayer(teamId, skillLevel, 'defenseman', botUserId);
+        const defenseman = await createBotPlayer(teamId, skillLevel, 'defenseman', botUserId, usedNumbers);
         players.push(defenseman);
       }
       
       // Add 4 centers
       for (let i = 0; i < 4; i++) {
-        const center = await createBotPlayer(teamId, skillLevel, 'center', botUserId);
+        const center = await createBotPlayer(teamId, skillLevel, 'center', botUserId, usedNumbers);
         players.push(center);
       }
       
       // Add 4 left wings
       for (let i = 0; i < 4; i++) {
-        const leftWing = await createBotPlayer(teamId, skillLevel, 'left_wing', botUserId);
+        const leftWing = await createBotPlayer(teamId, skillLevel, 'left_wing', botUserId, usedNumbers);
         players.push(leftWing);
       }
       
       // Add 4 right wings
       for (let i = 0; i < 4; i++) {
-        const rightWing = await createBotPlayer(teamId, skillLevel, 'right_wing', botUserId);
+        const rightWing = await createBotPlayer(teamId, skillLevel, 'right_wing', botUserId, usedNumbers);
         players.push(rightWing);
       }
       
