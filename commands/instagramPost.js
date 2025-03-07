@@ -259,60 +259,64 @@ async function instagramPost(interaction) {
     let currentImageIndex = 0;
     
     collector.on('collect', async i => {
-      // Get action type and post ID from the button's customId
-      const [action, postId] = i.customId.split('_');
-      
-      // Handle navigation buttons
-      if (action === 'next' || action === 'prev') {
-        // Update the current image index
-        if (action === 'next') {
-          currentImageIndex = (currentImageIndex + 1) % allEmbeds.length;
-        } else {
-          currentImageIndex = (currentImageIndex - 1 + allEmbeds.length) % allEmbeds.length;
-        }
-
+      try {
+        // Get action type and post ID from the button's customId
+        const [action, postId] = i.customId.split('_');
+        
+        // Handle navigation buttons
+        if (action === 'next' || action === 'prev') {
+          // Update the current image index
+          if (action === 'next') {
+            currentImageIndex = (currentImageIndex + 1) % allEmbeds.length;
+          } else {
+            currentImageIndex = (currentImageIndex - 1 + allEmbeds.length) % allEmbeds.length;
+          }
+    
           // Create fresh button components for each update
           const updatedBaseButtons = new ActionRowBuilder()
-          .addComponents(
-            new ButtonBuilder()
-              .setCustomId(`like_${postId}`)
-              .setLabel('❤️ Like')
-              .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-              .setCustomId(`comment_${postId}`)
-              .setLabel('💬 Comment')
-              .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-              .setCustomId(`share_${postId}`)
-              .setLabel('🔄 Share')
-              .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-              .setCustomId(`save_${postId}`)
-              .setLabel('🔖 Save')
-              .setStyle(ButtonStyle.Secondary)
-          );
-
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(`like_${postId}`)
+                .setLabel('❤️ Like')
+                .setStyle(ButtonStyle.Secondary),
+              new ButtonBuilder()
+                .setCustomId(`comment_${postId}`)
+                .setLabel('💬 Comment')
+                .setStyle(ButtonStyle.Secondary),
+              new ButtonBuilder()
+                .setCustomId(`share_${postId}`)
+                .setLabel('🔄 Share')
+                .setStyle(ButtonStyle.Secondary),
+              new ButtonBuilder()
+                .setCustomId(`save_${postId}`)
+                .setLabel('🔖 Save')
+                .setStyle(ButtonStyle.Secondary)
+            );
+    
           // Update navigation buttons
           const updatedNavButtons = new ActionRowBuilder()
-          .addComponents(
-            new ButtonBuilder()
-              .setCustomId(`prev_${postId}`)
-              .setLabel('◀️ Previous')
-              .setStyle(ButtonStyle.Primary)
-              .setDisabled(currentImageIndex === 0), // Disable if we're on the first image
-            new ButtonBuilder()
-              .setCustomId(`next_${postId}`)
-              .setLabel('Next ▶️')
-              .setStyle(ButtonStyle.Primary)
-              .setDisabled(currentImageIndex === allEmbeds.length - 1) // Disable if we're on the last image
-          );
-        
-        // Update the message with the new embed and buttons
-        const updatedComponents = [updatedBaseButtons, updatedNavButtons];
-        await i.update({ embeds: [allEmbeds[currentImageIndex]], components: updatedComponents });
-        
-        return;
-      }      
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(`prev_${postId}`)
+                .setLabel('◀️ Previous')
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(currentImageIndex === 0), // Disable if we're on the first image
+              new ButtonBuilder()
+                .setCustomId(`next_${postId}`)
+                .setLabel('Next ▶️')
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(currentImageIndex === allEmbeds.length - 1) // Disable if we're on the last image
+            );
+          
+          // Update the message with the new embed and buttons
+          const updatedComponents = [updatedBaseButtons];
+          if (hasMultipleImages) {
+            updatedComponents.push(updatedNavButtons);
+          }
+          
+          await i.update({ embeds: [allEmbeds[currentImageIndex]], components: updatedComponents });
+          return;
+        }    
       
       // Handle other button actions
       if (action === 'like') {
@@ -429,7 +433,17 @@ async function instagramPost(interaction) {
           ]
         });
       }
-    });
+    }
+   catch (error) {
+    console.error('Error handling button interaction:', error);
+    try {
+      await i.reply({ content: `An error occurred: ${error.message}`, ephemeral: true });
+    } catch (replyError) {
+      console.error('Could not reply with error message:', replyError);
+    }
+  }
+});
+    
     
     // Set up interaction collector for modal submissions
     const modalFilter = i => i.customId.includes(postId);
