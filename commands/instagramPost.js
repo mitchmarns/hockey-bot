@@ -1,5 +1,6 @@
+// Modified instagramPost.js to only use characterModel
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const playerModel = require('../database/models/playerModel');
+const characterModel = require('../database/models/characterModel');
 const teamModel = require('../database/models/teamModel');
 
 async function instagramPost(interaction) {
@@ -14,15 +15,20 @@ async function instagramPost(interaction) {
     const location = interaction.options.getString('location');
     const guildId = interaction.guildId;
     
-    // Find player
-    const player = await playerModel.getPlayerByName(playerName, guildId);
+    // Find character using the character model
+    const character = await characterModel.getCharacterByName(playerName, guildId);
     
-    if (!player) {
-      return interaction.reply(`Player "${playerName}" doesn't exist.`);
+    if (!character) {
+      return interaction.reply(`Character "${playerName}" doesn't exist. Make sure you're using their exact name.`);
     }
     
-    // Check if the user is the one who created the player
-    if (player.user_id !== interaction.user.id) {
+    // Verify this is a player-type character
+    if (character.character_type !== 'player') {
+      return interaction.reply(`"${playerName}" exists but isn't a hockey player. Only players can create Instagram posts.`);
+    }
+    
+    // Check if the user is the one who created the character
+    if (character.user_id !== interaction.user.id) {
       return interaction.reply({ 
         content: 'You can only create posts for your own characters.', 
         ephemeral: true 
@@ -48,8 +54,8 @@ async function instagramPost(interaction) {
       }
     }
     
-    // Get team info for the player
-    const team = await teamModel.getTeamById(player.team_id, guildId);
+    // Get team info for the character
+    const team = await teamModel.getTeamById(character.team_id, guildId);
     
     // Format hashtags if provided
     let formattedHashtags = '';
@@ -80,12 +86,15 @@ async function instagramPost(interaction) {
     // Format location display
     const locationDisplay = location ? `📍 ${location}` : null;
 
+    // Get player jersey number if available
+    const playerNumber = character.jersey_number ? `#${character.jersey_number}` : '';
+
     // Build the Instagram-style embed
     const embed = new EmbedBuilder()
       .setColor('#E1306C') // Instagram color
       .setAuthor({
-        name: `${player.name} (@${player.name.replace(/\s+/g, '_').toLowerCase()})`,
-        iconURL: player.image_url || null
+        name: `${character.name} ${playerNumber} (@${character.name.replace(/\s+/g, '_').toLowerCase()})`,
+        iconURL: character.image_url || null
       })
       .setImage(imageUrl)
       .setTimestamp();
@@ -211,8 +220,8 @@ async function instagramPost(interaction) {
       const additionalEmbed = new EmbedBuilder()
         .setColor('#E1306C')
         .setAuthor({
-          name: `${player.name} (@${player.name.replace(/\s+/g, '_').toLowerCase()})`,
-          iconURL: player.image_url || null
+          name: `${character.name} ${playerNumber} (@${character.name.replace(/\s+/g, '_').toLowerCase()})`,
+          iconURL: character.image_url || null
         })
         .setImage(imgUrl)
         .setDescription(fullCaption)
@@ -241,14 +250,14 @@ async function instagramPost(interaction) {
     }
     
     const response = await interaction.reply({ 
-      content: `${player.name} shared a new Instagram post!`,
+      content: `${character.name} shared a new Instagram post!`,
       embeds: [allEmbeds[0]],
       components: components
     }).then(interactionResponse => interactionResponse.fetch());
     
     // Create a thread for interactions
     const thread = await response.startThread({
-      name: `${player.name}'s Instagram Post`,
+      name: `${character.name}'s Instagram Post`,
       autoArchiveDuration: 1440 // Auto-archive after 1 day
     });
     
@@ -455,7 +464,7 @@ async function instagramPost(interaction) {
         const characterName = i.fields.getTextInputValue('character_name');
         
         // Find the character in the database
-        const character = await playerModel.getPlayerByName(characterName, guildId);
+        const character = await characterModel.getCharacterByName(characterName, guildId);
         if (!character) {
           return await i.reply({ 
             content: `Character "${characterName}" doesn't exist. Make sure you're using their exact name.`,
