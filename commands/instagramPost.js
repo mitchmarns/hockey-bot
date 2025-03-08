@@ -268,7 +268,7 @@ async function instagramPost(interaction) {
     // Set up a collector for button interactions with proper filter
     const collector = response.createMessageComponentCollector({
       filter: i => i.customId.includes(postId),
-      time: 3600000 // 1 hour timeout
+      time: 259200000 // 3 day timeout
     });
     
     // Keep track of current image index
