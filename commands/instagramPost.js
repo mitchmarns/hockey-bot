@@ -156,8 +156,6 @@ async function instagramPost(interaction) {
       'My favorite player! 🏒'
     ];
     
-    // Add a help note about the reply feature
-    const helpNote = `📱 **Instagram Post Help**\nTip: When commenting, you can reply to other characters by entering their name in the "Reply to" field.`;
     
     const randomComment = randomComments[Math.floor(Math.random() * randomComments.length)];
     
@@ -256,7 +254,7 @@ async function instagramPost(interaction) {
     }
     
     const response = await interaction.reply({ 
-      content: `${character.name} shared a new Instagram post!\n${helpNote}`,
+      content: `${character.name} shared a new Instagram post!`,
       embeds: [allEmbeds[0]],
       components: components
     }).then(interactionResponse => interactionResponse.fetch());
