@@ -156,6 +156,9 @@ async function instagramPost(interaction) {
       'My favorite player! 🏒'
     ];
     
+    // Add a help note about the reply feature
+    const helpNote = `📱 **Instagram Post Help**\nTip: When commenting, you can reply to other characters by entering their name in the "Reply to" field.`;
+    
     const randomComment = randomComments[Math.floor(Math.random() * randomComments.length)];
     
     embed.addFields(
@@ -253,7 +256,7 @@ async function instagramPost(interaction) {
     }
     
     const response = await interaction.reply({ 
-      content: `${character.name} shared a new Instagram post!`,
+      content: `${character.name} shared a new Instagram post!\n${helpNote}`,
       embeds: [allEmbeds[0]],
       components: components
     }).then(interactionResponse => interactionResponse.fetch());
@@ -380,6 +383,19 @@ async function instagramPost(interaction) {
                 components: [
                   {
                     type: 4, // Text Input
+                    custom_id: 'reply_to',
+                    label: 'Reply to (Optional)',
+                    style: 1, // Short style
+                    placeholder: 'Enter character name if replying to someone',
+                    required: false
+                  }
+                ]
+              },
+              {
+                type: 1, // Action Row
+                components: [
+                  {
+                    type: 4, // Text Input
                     custom_id: 'comment_text',
                     label: 'Comment',
                     style: 2, // Paragraph style
@@ -458,8 +474,8 @@ async function instagramPost(interaction) {
       }
     });
     
-    // Set up a separate collector for modal submissions
-    const modalHandler = interaction.client.on('interactionCreate', async i => {
+    // Set up a separate handler for modal submissions
+    const modalHandler = async function(i) {
       // Only process modal submissions that match our post ID
       if (!i.isModalSubmit() || !i.customId.includes(postId)) return;
       
@@ -496,7 +512,7 @@ async function instagramPost(interaction) {
         
         // Handle different interaction types
         if (i.customId.includes('like')) {
-          // Post like notification in the thread
+          // Post like notification in the thread with no tagging
           await thread.send({
             content: `**${characterName}** liked this post! ❤️`,
             allowedMentions: { parse: [] }
@@ -512,6 +528,38 @@ async function instagramPost(interaction) {
           // Get the comment text
           const commentText = i.fields.getTextInputValue('comment_text');
           
+          // Check if this is a reply to someone
+          let replyTo = '';
+          try {
+            replyTo = i.fields.getTextInputValue('reply_to').trim();
+          } catch (e) {
+            // Reply field is optional, so it might not exist
+          }
+          
+          // Format the description based on whether it's a reply or not
+          let description = commentText;
+          
+          // Look up the Discord user who created the character being replied to
+          let mentionedUserId = null;
+          if (replyTo) {
+            try {
+              // Try to find the replied-to character in the database
+              const repliedToCharacter = await characterModel.getCharacterByName(replyTo, guildId);
+              if (repliedToCharacter && repliedToCharacter.user_id) {
+                mentionedUserId = repliedToCharacter.user_id;
+                // Add mention format for Discord
+                description = `**Replying to @${replyTo.replace(/\s+/g, '_').toLowerCase()}** · ${commentText}`;
+              } else {
+                // If character not found, still format as reply but don't tag
+                description = `**Replying to @${replyTo.replace(/\s+/g, '_').toLowerCase()}** · ${commentText}`;
+              }
+            } catch (error) {
+              console.error("Error finding replied-to character:", error);
+              // Still format as reply if lookup fails
+              description = `**Replying to @${replyTo.replace(/\s+/g, '_').toLowerCase()}** · ${commentText}`;
+            }
+          }
+          
           // Create an embed for the comment
           const commentEmbed = new EmbedBuilder()
             .setColor('#E1306C')
@@ -519,17 +567,36 @@ async function instagramPost(interaction) {
               name: `${characterName} (@${characterName.replace(/\s+/g, '_').toLowerCase()})`,
               iconURL: character.image_url || null
             })
-            .setDescription(commentText)
+            .setDescription(description)
             .setTimestamp();
           
+          // Create the message content for thread
+          let messageContent = '';
+          
+          // If replying to someone, add a Discord mention
+          if (mentionedUserId) {
+            messageContent = `<@${mentionedUserId}> your character was mentioned in a reply`;
+          }
+          
           // Send the comment in thread
-          await thread.send({ embeds: [commentEmbed] });
+          await thread.send({ 
+            content: messageContent || null,
+            embeds: [commentEmbed],
+            allowedMentions: mentionedUserId ? { users: [mentionedUserId] } : { parse: [] }
+          });
           
           // Acknowledge to the user
-          await i.reply({
-            content: `${characterName} commented on this post!`,
-            ephemeral: true
-          });
+          if (replyTo) {
+            await i.reply({
+              content: `${characterName} replied to ${replyTo}'s comment!`,
+              ephemeral: true
+            });
+          } else {
+            await i.reply({
+              content: `${characterName} commented on this post!`,
+              ephemeral: true
+            });
+          }
         }
         else if (i.customId.includes('share')) {
           // Get the share text if provided
@@ -545,7 +612,7 @@ async function instagramPost(interaction) {
             `**${characterName}** shared this post to their story with message: *"${shareText}"*` :
             `**${characterName}** shared this post to their story!`;
           
-          // Send share notification to thread
+          // Send share notification to thread with no tagging
           await thread.send({
             content: shareMessage,
             allowedMentions: { parse: [] }
@@ -558,7 +625,7 @@ async function instagramPost(interaction) {
           });
         }
         else if (i.customId.includes('save')) {
-          // Send save notification to thread
+          // Send save notification to thread with no tagging
           await thread.send({
             content: `**${characterName}** saved this post to their collection! 🔖`,
             allowedMentions: { parse: [] }
@@ -577,6 +644,14 @@ async function instagramPost(interaction) {
           ephemeral: true
         });
       }
+    };
+    
+    // Add the modal handler
+    interaction.client.on('interactionCreate', modalHandler);
+    
+    // Clean up the handler when collector ends
+    collector.on('end', () => {
+      interaction.client.removeListener('interactionCreate', modalHandler);
     });
     
   } catch (error) {
