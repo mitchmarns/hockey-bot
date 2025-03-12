@@ -179,11 +179,54 @@ async function getTeamMatchupHistory(team1Id, team2Id, guildId) {
 
 // Schedule a game with season context
 async function scheduleGameWithSeason(homeTeamId, awayTeamId, date, time, seasonId, isPlayoffGame = false, guildId) {
+  if (!guildId) {
+    throw new Error("Guild ID is required");
+  }
+  
   const db = getDb(guildId);
-  return await db.run(
-    'INSERT INTO games (home_team_id, away_team_id, scheduled_date, scheduled_time, is_played, season_id, is_playoff_game) VALUES (?, ?, ?, ?, 0, ?, ?)',
-    [homeTeamId, awayTeamId, date, time, seasonId, isPlayoffGame ? 1 : 0]
-  );
+  
+  // Check if the season_id column exists first
+  try {
+    const columns = await db.all('PRAGMA table_info(games)');
+    const columnNames = columns.map(c => c.name);
+    
+    // If season_id doesn't exist, add it
+    if (!columnNames.includes('season_id')) {
+      await db.run('ALTER TABLE games ADD COLUMN season_id INTEGER REFERENCES seasons(id)');
+      console.log(`Added season_id column to games table for guild ${guildId}`);
+    }
+    
+    // If is_playoff_game doesn't exist, add it
+    if (!columnNames.includes('is_playoff_game')) {
+      await db.run('ALTER TABLE games ADD COLUMN is_playoff_game BOOLEAN DEFAULT 0');
+      console.log(`Added is_playoff_game column to games table for guild ${guildId}`);
+    }
+  } catch (error) {
+    console.error(`Error checking/updating games table schema: ${error.message}`);
+    // We'll try to continue anyway and let the insert fail if needed
+  }
+  
+  try {
+    // Now insert the game
+    return await db.run(
+      'INSERT INTO games (home_team_id, away_team_id, scheduled_date, scheduled_time, is_played, season_id, is_playoff_game) VALUES (?, ?, ?, ?, 0, ?, ?)',
+      [homeTeamId, awayTeamId, date, time, seasonId, isPlayoffGame ? 1 : 0]
+    );
+  } catch (error) {
+    console.error(`Error inserting game: ${error.message}`);
+    
+    // If the insert fails with season info, try without it (fallback)
+    try {
+      console.log("Attempting fallback insert without season info...");
+      return await db.run(
+        'INSERT INTO games (home_team_id, away_team_id, scheduled_date, scheduled_time, is_played) VALUES (?, ?, ?, ?, 0)',
+        [homeTeamId, awayTeamId, date, time]
+      );
+    } catch (fallbackError) {
+      // If even the fallback fails, throw the original error
+      throw error;
+    }
+  }
 }
 
 // Record a game result with season context

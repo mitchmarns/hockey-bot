@@ -93,8 +93,28 @@ async function initSeasonSchema(guildId) {
 
 // Get the currently active season
 async function getActiveSeason(guildId) {
+  if (!guildId) {
+    console.warn("Warning: guildId not provided to getActiveSeason");
+    return null;
+  }
+
   const db = getDb(guildId);
-  return await db.get('SELECT * FROM seasons WHERE is_active = 1');
+  
+  try {
+    // First check if the seasons table exists
+    const tablesResult = await db.all("SELECT name FROM sqlite_master WHERE type='table' AND name='seasons'");
+    if (tablesResult.length === 0) {
+      console.log(`No seasons table found for guild ${guildId}`);
+      return null;
+    }
+    
+    // Now try to get the active season
+    return await db.get('SELECT * FROM seasons WHERE is_active = 1');
+  } catch (error) {
+    console.error(`Error in getActiveSeason for guild ${guildId}:`, error);
+    // Return null instead of throwing to avoid breaking commands that use this
+    return null;
+  }
 }
 
 // End the current season
