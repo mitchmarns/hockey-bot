@@ -21,10 +21,10 @@ client.once('ready', async () => {
   console.log(`Bot is in ${client.guilds.cache.size} servers`);
   
   // Initialize database schemas for all guilds
-  const { initializeDatabase } = require('./database/db');
+  const { initDatabase } = require('./database/db');
   for (const guild of client.guilds.cache.values()) {
     try {
-      await initializeDatabase(guild.id);
+      await initDatabase(guild.id);
       console.log(`Database initialized for guild: ${guild.name} (${guild.id})`);
     } catch (error) {
       console.error(`Failed to initialize database for guild ${guild.id}:`, error);
@@ -62,8 +62,8 @@ client.on('interactionCreate', async interaction => {
 client.on('guildCreate', async guild => {
   console.log(`Joined new guild: ${guild.name} (${guild.id})`);
   try {
-    const { initializeDatabase } = require('./database/db');
-    await initializeDatabase(guild.id);
+    const { initDatabase } = require('./database/db');
+    await initDatabase(guild.id);
     console.log(`Database initialized for new guild: ${guild.name}`);
   } catch (error) {
     console.error(`Failed to initialize database for new guild ${guild.id}:`, error);
