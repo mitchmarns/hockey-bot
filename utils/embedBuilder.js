@@ -52,18 +52,30 @@ function createErrorEmbed(title, description) {
  */
 function createPlayerEmbed(player, skills = null) {
   const embed = createEmbed(
-    `Player Info: ${player.name}`,
-    `${player.name} (#${player.number}) - ${player.team_name}`
+    `🏒 ${player.name.toUpperCase()}`,
+    `**${player.team_name?.toUpperCase() || 'FREE AGENT'}**`,
+    '#C8102E' // Hockey red
   );
   
-  embed.addFields(
-    { name: 'Position', value: player.position.replace(/_/g, ' '), inline: true },
-    { name: 'Games', value: player.games_played.toString(), inline: true }
-  );
+  // Main player info with better formatting
+  const playerInfo = [];
+  if (player.position) {
+    const pos = player.position.replace(/_/g, ' ').toUpperCase();
+    playerInfo.push(`**POS:** ${pos}`);
+  }
+  if (player.number) {
+    playerInfo.push(`**#${player.number}**`);
+  }
+  
+  embed.addFields({ 
+    name: '📊 PLAYER INFO', 
+    value: playerInfo.join('  •  '), 
+    inline: false 
+  });
 
   // Different stats based on position
   if (player.position === 'goalie') {
-    // Goalie stats
+    // Goalie stats with hockey card formatting
     const saves = player.saves || 0;
     const goalsAgainst = player.goals_against || 0;
     const totalShots = saves + goalsAgainst;
@@ -74,72 +86,91 @@ function createPlayerEmbed(player, skills = null) {
     const gaa = player.games_played > 0 ? 
       (goalsAgainst / player.games_played).toFixed(2) : '0.00';
     
-    embed.addFields(
-      { name: 'Saves', value: `${saves}`, inline: true },
-      { name: 'Goals Against', value: `${goalsAgainst}`, inline: true },
-      { name: 'Save %', value: `${savePercentage}%`, inline: true },
-      { name: 'GAA', value: gaa, inline: true },
-      { name: 'Shutouts', value: `${player.shutouts || 0}`, inline: true },
-      { name: '+/-', value: `${player.plus_minus || 0}`, inline: true }
-    );
-  } else {
-    // Skater stats
-    embed.addFields(
-      { name: 'Goals', value: player.goals.toString(), inline: true },
-      { name: 'Assists', value: player.assists.toString(), inline: true },
-      { name: 'Points', value: (player.goals + player.assists).toString(), inline: true },
-      { name: '+/-', value: `${player.plus_minus || 0}`, inline: true }
-    );
+    const goalieStats = [
+      `**GP:** ${player.games_played || 0}`,
+      `**SV:** ${saves}`,
+      `**GA:** ${goalsAgainst}`,
+      `**SV%:** ${savePercentage}%`,
+      `**GAA:** ${gaa}`,
+      `**SO:** ${player.shutouts || 0}`
+    ];
     
-    // Second row of stats
-    embed.addFields(
-      { name: 'Shots', value: `${player.shots || 0}`, inline: true },
-      { name: 'Hits', value: `${player.hits || 0}`, inline: true },
-      { name: 'Blocks', value: `${player.blocks || 0}`, inline: true },
-      { name: 'PIM', value: `${player.penalty_minutes || 0}`, inline: true }
-    );
+    embed.addFields({ 
+      name: '🥅 GOALIE STATS', 
+      value: goalieStats.join('  •  '), 
+      inline: false 
+    });
+  } else {
+    // Skater stats with hockey card formatting
+    const totalPoints = (player.goals || 0) + (player.assists || 0);
+    const skaterStats = [
+      `**GP:** ${player.games_played || 0}`,
+      `**G:** ${player.goals || 0}`,
+      `**A:** ${player.assists || 0}`,
+      `**PTS:** ${totalPoints}`
+    ];
+    
+    // Additional stats
+    if (player.shots) skaterStats.push(`**SOG:** ${player.shots}`);
+    if (player.plus_minus !== undefined) {
+      skaterStats.push(`**+/-:** ${player.plus_minus > 0 ? '+' : ''}${player.plus_minus}`);
+    }
+    if (player.penalty_minutes) skaterStats.push(`**PIM:** ${player.penalty_minutes}`);
+    
+    embed.addFields({ 
+      name: '🎯 PLAYER STATS', 
+      value: skaterStats.join('  •  '), 
+      inline: false 
+    });
     
     // Add faceoff stats for centers
-    if (player.position === 'center') {
+    if (player.position === 'center' && (player.faceoff_wins || player.faceoff_losses)) {
       const faceoffWins = player.faceoff_wins || 0;
       const faceoffLosses = player.faceoff_losses || 0;
       const totalFaceoffs = faceoffWins + faceoffLosses;
+      const faceoffPct = totalFaceoffs > 0 ? ((faceoffWins / totalFaceoffs) * 100).toFixed(1) : '0.0';
       
-      if (totalFaceoffs > 0) {
-        const faceoffPercentage = ((faceoffWins / totalFaceoffs) * 100).toFixed(1);
-        embed.addFields(
-          { name: 'Faceoff %', value: `${faceoffPercentage}% (${faceoffWins}/${totalFaceoffs})`, inline: true }
-        );
-      }
+      embed.addFields({ 
+        name: '⚡ FACEOFFS', 
+        value: `**FO%:** ${faceoffPct}%  •  **W:** ${faceoffWins}  •  **L:** ${faceoffLosses}`, 
+        inline: false 
+      });
     }
   }
 
-  // Add skills if provided
+  // Add skills if provided with visual bars
   if (skills) {
-    embed.addFields(
-      { name: '\u200B', value: '**Skills**', inline: false }
-    );
+    const skillBars = [];
+    const skillNames = {
+      skating: '⛸️ Skating',
+      shooting: '🥅 Shooting', 
+      passing: '🎯 Passing',
+      defense: '🛡️ Defense',
+      physical: '💪 Physical',
+      goaltending: '🥅 Goaltending'
+    };
     
-    if (player.position === 'goalie') {
-      embed.addFields(
-        { name: 'Goaltending', value: `${skills.goaltending}/100`, inline: true },
-        { name: 'Skating', value: `${skills.skating}/100`, inline: true },
-        { name: 'Physical', value: `${skills.physical}/100`, inline: true }
-      );
-    } else {
-      embed.addFields(
-        { name: 'Skating', value: `${skills.skating}/100`, inline: true },
-        { name: 'Shooting', value: `${skills.shooting}/100`, inline: true },
-        { name: 'Passing', value: `${skills.passing}/100`, inline: true },
-        { name: 'Defense', value: `${skills.defense}/100`, inline: true },
-        { name: 'Physical', value: `${skills.physical}/100`, inline: true }
-      );
-    }
+    Object.entries(skillNames).forEach(([key, name]) => {
+      const value = skills[key] || 50;
+      const bars = '█'.repeat(Math.floor(value / 10)) + '░'.repeat(10 - Math.floor(value / 10));
+      skillBars.push(`${name}: ${bars} ${value}`);
+    });
+    
+    embed.addFields({ 
+      name: '⚡ SKILLS', 
+      value: skillBars.join('\n'), 
+      inline: false 
+    });
   }
   
   if (player.image_url) {
     embed.setThumbnail(player.image_url);
   }
+  
+  // Add hockey card footer
+  embed.setFooter({ 
+    text: `Player Card • ${new Date().getFullYear()} Season` 
+  });
   
   return embed;
 }

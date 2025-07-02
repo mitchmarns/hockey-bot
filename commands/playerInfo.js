@@ -1,7 +1,7 @@
 // Update playerInfo.js to display face claim
 const playerModel = require('../database/models/playerModel');
 const skillsModel = require('../database/models/skillsModel');
-const { createPlayerEmbed } = require('../utils/embedBuilder');
+const { EmbedBuilder } = require('discord.js');
 
 async function playerInfo(interaction) {
   const playerName = interaction.options.getString('name');
@@ -17,30 +17,116 @@ async function playerInfo(interaction) {
   // Get player skills
   const skills = await skillsModel.getPlayerSkills(player.id, guildId);
   
-  // Create and send player embed
-  const embed = createPlayerEmbed(player, skills);
+  // Create hockey card style embed
+  const embed = new EmbedBuilder()
+    .setColor('#C8102E') // Hockey red
+    .setTitle(`🏒 ${player.name.toUpperCase()}`)
+    .setDescription(`**${player.team_name?.toUpperCase() || 'FREE AGENT'}**`)
+    .setTimestamp();
   
-  // Add face claim if available (this is added here since we don't want to modify the utility function)
-  if (player.face_claim) {
-    // Find where to insert the face claim field - typically after the basic info
-    const fieldsCount = embed.data.fields.length;
-    
-    // Insert face claim after position, before stats
-    if (fieldsCount >= 2) {
-      // Create a new array of fields with face claim inserted at position 2
-      const updatedFields = [
-        ...embed.data.fields.slice(0, 2),
-        { name: 'Face Claim', value: player.face_claim, inline: true },
-        ...embed.data.fields.slice(2)
-      ];
-      
-      // Replace the fields array
-      embed.data.fields = updatedFields;
-    } else {
-      // If there aren't enough fields, just add it
-      embed.addFields({ name: 'Face Claim', value: player.face_claim, inline: true });
-    }
+  // Main player info section
+  const playerInfo = [];
+  if (player.position) {
+    const pos = player.position.replace(/_/g, ' ').toUpperCase();
+    playerInfo.push(`**POS:** ${pos}`);
   }
+  if (player.number) {
+    playerInfo.push(`**#${player.number}**`);
+  }
+  
+  embed.addFields({ 
+    name: '📊 PLAYER INFO', 
+    value: playerInfo.join('  •  '), 
+    inline: false 
+  });
+
+  // Career stats section
+  const totalPoints = (player.goals || 0) + (player.assists || 0);
+  const stats = [
+    `**GP:** ${player.games_played || 0}`,
+    `**G:** ${player.goals || 0}`,
+    `**A:** ${player.assists || 0}`,
+    `**PTS:** ${totalPoints}`
+  ];
+  
+  // Add position-specific stats
+  if (player.position === 'goalie') {
+    const saves = player.saves || 0;
+    const goalsAgainst = player.goals_against || 0;
+    const totalShots = saves + goalsAgainst;
+    const savePercentage = totalShots > 0 ? ((saves / totalShots) * 100).toFixed(1) : '0.0';
+    const gaa = player.games_played > 0 ? (goalsAgainst / player.games_played).toFixed(2) : '0.00';
+    
+    stats.length = 0; // Clear regular stats for goalies
+    stats.push(
+      `**GP:** ${player.games_played || 0}`,
+      `**SV:** ${saves}`,
+      `**GA:** ${goalsAgainst}`,
+      `**SV%:** ${savePercentage}%`,
+      `**GAA:** ${gaa}`,
+      `**SO:** ${player.shutouts || 0}`
+    );
+  } else {
+    // Add additional skater stats
+    if (player.shots) stats.push(`**SOG:** ${player.shots}`);
+    if (player.plus_minus !== undefined) stats.push(`**+/-:** ${player.plus_minus > 0 ? '+' : ''}${player.plus_minus}`);
+    if (player.penalty_minutes) stats.push(`**PIM:** ${player.penalty_minutes}`);
+  }
+  
+  embed.addFields({ 
+    name: '🎯 CAREER STATS', 
+    value: stats.join('  •  '), 
+    inline: false 
+  });
+
+  // Skills section
+  if (skills) {
+    const skillBars = [];
+    const skillNames = {
+      skating: '⛸️ Skating',
+      shooting: '🥅 Shooting', 
+      passing: '🎯 Passing',
+      defense: '🛡️ Defense',
+      physical: '💪 Physical',
+      goaltending: '🥅 Goaltending'
+    };
+    
+    Object.entries(skillNames).forEach(([key, name]) => {
+      const value = skills[key] || 50;
+      const bars = '█'.repeat(Math.floor(value / 10)) + '░'.repeat(10 - Math.floor(value / 10));
+      skillBars.push(`${name}: ${bars} ${value}`);
+    });
+    
+    embed.addFields({ 
+      name: '⚡ SKILLS', 
+      value: skillBars.join('\n'), 
+      inline: false 
+    });
+  }
+  
+  // Personal details
+  const personalDetails = [];
+  if (player.face_claim) {
+    personalDetails.push(`**FACE CLAIM:** ${player.face_claim}`);
+  }
+  
+  if (personalDetails.length > 0) {
+    embed.addFields({ 
+      name: '👨‍🦱 PERSONAL', 
+      value: personalDetails.join('\n'), 
+      inline: false 
+    });
+  }
+  
+  // Add player image
+  if (player.image_url) {
+    embed.setThumbnail(player.image_url);
+  }
+  
+  // Add footer
+  embed.setFooter({ 
+    text: `Player Card • ${new Date().getFullYear()} Season` 
+  });
   
   await interaction.reply({ embeds: [embed] });
 }
