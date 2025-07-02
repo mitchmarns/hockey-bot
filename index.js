@@ -2,6 +2,7 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { TOKEN } = require('./config/config');
 const commandHandlers = require('./commands/commandHandlers');
+const registerCommands = require('./commands/registerCommands');
 
 // Initialize bot with required intents
 const client = new Client({ 
@@ -19,6 +20,15 @@ client.commands = new Collection();
 client.once('ready', async () => {
   console.log(`Bot logged in as ${client.user.tag}!`);
   console.log(`Bot is in ${client.guilds.cache.size} servers`);
+  
+  // Register slash commands
+  try {
+    console.log('Registering slash commands...');
+    await registerCommands();
+    console.log('Slash commands registered successfully!');
+  } catch (error) {
+    console.error('Failed to register slash commands:', error);
+  }
   
   // Initialize database schemas for all guilds
   const { initDatabase } = require('./database/db');

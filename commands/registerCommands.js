@@ -641,8 +641,3 @@ async function registerCommands() {
 
 module.exports = registerCommands;
 module.exports.commands = commands;
-
-// Execute if this file is run directly
-if (require.main === module) {
-  registerCommands();
-}
