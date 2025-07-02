@@ -44,7 +44,7 @@ async function characterInfo(interaction) {
       
       if (playerInfo.length > 0) {
         embed.addFields({ 
-          name: 'PLAYER INFO', 
+          name: '# PLAYER INFO', 
           value: playerInfo.join('  •  '), 
           inline: false 
         });
@@ -62,7 +62,7 @@ async function characterInfo(interaction) {
         
         if (stats.length > 0) {
           embed.addFields({ 
-            name: 'CAREER STATS', 
+            name: '# CAREER STATS', 
             value: stats.join('  •  '), 
             inline: false 
           });
@@ -84,7 +84,7 @@ async function characterInfo(interaction) {
       
       if (coachInfo.length > 0) {
         embed.addFields({ 
-          name: 'COACHING INFO', 
+          name: '# COACHING INFO', 
           value: coachInfo.join('\n'), 
           inline: false 
         });
@@ -99,7 +99,7 @@ async function characterInfo(interaction) {
       
       if (character.job) {
         embed.addFields({ 
-          name: 'ROLE', 
+          name: '# ROLE', 
           value: `**${character.job.toUpperCase()}**`, 
           inline: false 
         });
@@ -114,7 +114,7 @@ async function characterInfo(interaction) {
     
     if (personalDetails.length > 0) {
       embed.addFields({ 
-        name: 'PERSONAL', 
+        name: '# PERSONAL', 
         value: personalDetails.join('\n'), 
         inline: false 
       });
@@ -127,7 +127,7 @@ async function characterInfo(interaction) {
         character.biography;
       
       embed.addFields({ 
-        name: 'BIOGRAPHY', 
+        name: '# BIOGRAPHY', 
         value: bio, 
         inline: false 
       });

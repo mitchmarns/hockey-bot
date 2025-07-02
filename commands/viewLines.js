@@ -56,7 +56,7 @@ async function viewLines(interaction) {
       
       // Only add if there are valid forward lines
       if (forwardLinesText) {
-        embed.addFields({ name: 'Forward Lines', value: forwardLinesText });
+        embed.addFields({ name: '# Forward Lines', value: forwardLinesText });
       }
     }
     
@@ -76,7 +76,7 @@ async function viewLines(interaction) {
       
       // Only add if there are valid defense pairs
       if (defensePairsText) {
-        embed.addFields({ name: 'Defense Pairs', value: defensePairsText });
+        embed.addFields({ name: '# Defense Pairs', value: defensePairsText });
       }
     }
     
@@ -102,7 +102,7 @@ async function viewLines(interaction) {
       
       // Only add if there are valid power play units
       if (ppText) {
-        embed.addFields({ name: 'Power Play Units', value: ppText });
+        embed.addFields({ name: '# Power Play Units', value: ppText });
       }
     }
     
@@ -128,7 +128,7 @@ async function viewLines(interaction) {
       
       // Only add if there are valid penalty kill units
       if (pkText) {
-        embed.addFields({ name: 'Penalty Kill Units', value: pkText });
+        embed.addFields({ name: '# Penalty Kill Units', value: pkText });
       }
     }
     
@@ -149,7 +149,7 @@ async function viewLines(interaction) {
       }
       
       if (goalieText) {
-        embed.addFields({ name: 'Goalie Rotation', value: goalieText });
+        embed.addFields({ name: '# Goalie Rotation', value: goalieText });
       }
     }
     

@@ -64,7 +64,7 @@ async function teamRoster(interaction) {
       
       if (playerList.length === 0) playerList = 'None';
       
-      embed.addFields({ name: 'Players', value: playerList });
+      embed.addFields({ name: '# Players', value: playerList });
     }
     
     // Add coaches section if there are coaches or if showing all types
@@ -83,7 +83,7 @@ async function teamRoster(interaction) {
       
       if (coachList.length === 0) coachList = 'None';
       
-      embed.addFields({ name: 'Coaches', value: coachList });
+      embed.addFields({ name: '# Coaches', value: coachList });
     }
     
     // Add staff section if there are staff or if showing all types
@@ -102,7 +102,7 @@ async function teamRoster(interaction) {
       
       if (staffList.length === 0) staffList = 'None';
       
-      embed.addFields({ name: 'Staff', value: staffList });
+      embed.addFields({ name: '# Staff', value: staffList });
     }
     
     // Add civilians section if there are civilians or if showing all types
@@ -121,7 +121,7 @@ async function teamRoster(interaction) {
       
       if (civilianList.length === 0) civilianList = 'None';
       
-      embed.addFields({ name: 'Civilians', value: civilianList });
+      embed.addFields({ name: '# Civilians', value: civilianList });
     }
     
     await interaction.reply({ embeds: [embed] });
