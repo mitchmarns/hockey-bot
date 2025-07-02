@@ -205,7 +205,7 @@ async function setForwardLine(teamId, lineNumber, centerId, leftWingId, rightWin
 async function setDefensePair(teamId, pairNumber, defense1Id, defense2Id, coachUserId, guildId) {
   const db = getDb(guildId);
   
-  // Check if pair already exists
+  // Check if defense pair already exists
   const existingPair = await db.get(
     'SELECT id FROM team_lines WHERE team_id = ? AND line_type = ? AND line_number = ?',
     [teamId, 'defense', pairNumber]
@@ -215,8 +215,7 @@ async function setDefensePair(teamId, pairNumber, defense1Id, defense2Id, coachU
     // Update existing pair
     return await db.run(
       `UPDATE team_lines 
-       SET defense1_id = ?, defense2_id = ?, 
-           last_updated_by = ?, updated_at = CURRENT_TIMESTAMP
+       SET defense1_id = ?, defense2_id = ?, last_updated_by = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [defense1Id, defense2Id, coachUserId, existingPair.id]
     );

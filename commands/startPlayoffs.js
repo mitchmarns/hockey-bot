@@ -5,8 +5,10 @@ const teamModel = require('../database/models/teamModel');
 
 async function startPlayoffs(interaction) {
   try {
+    const guildId = interaction.guildId;
+    
     // Check if there's an active season
-    const activeSeason = await seasonModel.getActiveSeason();
+    const activeSeason = await seasonModel.getActiveSeason(guildId);
     if (!activeSeason) {
       return interaction.reply('There is no active season. Start a season first before initiating playoffs.');
     }
@@ -17,7 +19,7 @@ async function startPlayoffs(interaction) {
     }
     
     // Get teams sorted by standings
-    const teams = await teamModel.getTeamStandings();
+    const teams = await teamModel.getTeamStandings(guildId);
     
     if (teams.length < 2) {
       return interaction.reply('You need at least 2 teams in the league to start playoffs.');
@@ -43,10 +45,10 @@ async function startPlayoffs(interaction) {
     const playoffTeamIds = playoffTeams.map(team => team.id);
     
     // Start playoffs
-    await seasonModel.startPlayoffs(activeSeason.id, playoffTeamIds);
+    await seasonModel.startPlayoffs(activeSeason.id, playoffTeamIds, guildId);
     
     // Get the playoff bracket
-    const playoffBracket = await seasonModel.getPlayoffBracket(activeSeason.id);
+    const playoffBracket = await seasonModel.getPlayoffBracket(activeSeason.id, guildId);
     
     // Create the playoff announcement embed
     const embed = new EmbedBuilder()

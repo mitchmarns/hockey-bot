@@ -357,159 +357,27 @@ async function getPlayoffSeries(seriesId, guildId) {
 async function getPlayoffStats(seasonId, guildId) {
   const db = getDb(guildId);
   
-  // Get player stats in playoff games for this season
   return await db.all(`
-    SELECT 
-      p.id, p.name, p.position, p.number, p.team_id,
-      t.name as team_name, t.city as team_city,
-      COUNT(DISTINCT g.id) as games_played,
-      SUM(CASE WHEN ge.event_type = 'goal' THEN 1 ELSE 0 END) as goals,
-      SUM(CASE WHEN ge.description LIKE '%assisted by%' AND ge.description LIKE '%' || p.name || '%' 
-           AND ge.description NOT LIKE p.name || '%' THEN 1 ELSE 0 END) as assists
-    FROM games g
-    JOIN game_events ge ON g.id = ge.game_id
-    JOIN players p ON ge.player_id = p.id OR 
-                      (ge.event_type = 'goal' AND ge.description LIKE '%assisted by ' || p.name || '%')
+    SELECT p.*, t.name as team_name, t.city as team_city
+    FROM players p
     JOIN teams t ON p.team_id = t.id
-    WHERE g.season_id = ? AND g.is_playoff_game = 1
-    GROUP BY p.id
-    ORDER BY (goals + assists) DESC, goals DESC
-    LIMIT 50
+    JOIN games g ON g.season_id = ? AND g.is_playoff_game = 1
+    WHERE p.games_played > 0
+    ORDER BY (p.goals + p.assists) DESC, p.goals DESC
   `, [seasonId]);
 }
 
-// Simulate an entire playoff series (for testing or automated playoffs)
-async function simulatePlayoffSeries(seriesId, simulateGameFunction, guildId) {
-  const db = getDb(guildId);
-  
-  // Get the series
-  const series = await getPlayoffSeries(seriesId, guildId);
-  if (!series) {
-    throw new Error(`Playoff series with ID ${seriesId} not found.`);
-  }
-  
-  if (series.is_complete) {
-    throw new Error(`This playoff series is already complete.`);
-  }
-  
-  // Get the teams
-  const team1 = await db.get('SELECT * FROM teams WHERE id = ?', [series.team1_id]);
-  const team2 = await db.get('SELECT * FROM teams WHERE id = ?', [series.team2_id]);
-  
-  if (!team1 || !team2) {
-    throw new Error('One or both teams in this series do not exist.');
-  }
-  
-  const results = [];
-  const winsNeeded = Math.ceil(series.best_of / 2);
-  
-  // Keep simulating games until one team reaches the required number of wins
-  while (series.team1_wins < winsNeeded && series.team2_wins < winsNeeded) {
-    // Alternate home and away team
-    const gameNumber = series.team1_wins + series.team2_wins + 1;
-    
-    // Determine home team based on series pattern (typically 2-2-1-1-1 format)
-    let homeTeam, awayTeam;
-    if (gameNumber <= 2 || gameNumber === 5 || gameNumber === 7) {
-      // Team 1 is home
-      homeTeam = team1;
-      awayTeam = team2;
-    } else {
-      // Team 2 is home
-      homeTeam = team2;
-      awayTeam = team1;
-    }
-    
-    // Simulate the game
-    const gameResult = await simulateGameFunction(homeTeam, awayTeam, series.id, guildId);
-    
-    // Record the result
-    const winningTeamId = gameResult.homeScore > gameResult.awayScore ? homeTeam.id : awayTeam.id;
-    const gameOutcome = await recordPlayoffGame(seriesId, winningTeamId, guildId);
-    
-    results.push({
-      game: gameNumber,
-      homeTeam: `${homeTeam.city} ${homeTeam.name}`,
-      awayTeam: `${awayTeam.city} ${awayTeam.name}`,
-      score: `${gameResult.homeScore}-${gameResult.awayScore}`,
-      winner: winningTeamId === team1.id ? `${team1.city} ${team1.name}` : `${team2.city} ${team2.name}`,
-      seriesScore: `${gameOutcome.team1Wins}-${gameOutcome.team2Wins}`
-    });
-    
-    // Update series variables for loop condition
-    series.team1_wins = gameOutcome.team1Wins;
-    series.team2_wins = gameOutcome.team2Wins;
-    
-    // If series is complete, break the loop
-    if (gameOutcome.isComplete) {
-      break;
-    }
-  }
-  
-  // Get the final updated series
-  const finalSeries = await getPlayoffSeries(seriesId, guildId);
-  
-  return {
-    results: results,
-    finalScore: `${finalSeries.team1_wins}-${finalSeries.team2_wins}`,
-    winner: finalSeries.winner_id === team1.id ? 
-      `${team1.city} ${team1.name}` : 
-      `${team2.city} ${team2.name}`,
-    isChampionship: !finalSeries.next_series_id
-  };
-}
-
+// Create a new season
 async function createSeason(name, startDate, guildId) {
-  console.log(`Creating new season: "${name}" starting ${startDate} for guild ${guildId}`);
-  
   const db = getDb(guildId);
-  
-  // Check if there's an active season first
-  try {
-    console.log(`Checking for active seasons in guild ${guildId}...`);
-    const activeSeason = await getActiveSeason(guildId);
-    if (activeSeason) {
-      console.log(`Found active season: ${activeSeason.name} (ID: ${activeSeason.id}) in guild ${guildId}`);
-      throw new Error('There is already an active season. End it before starting a new one.');
-    }
-  } catch (error) {
-    // Only rethrow if it's not a "no such table" error
-    if (!error.message.includes('no such table')) {
-      throw error;
-    }
-    console.log(`No active seasons found (or seasons table doesn't exist yet) in guild ${guildId}`);
-  }
-  
-  // Ensure the seasons table exists
-  try {
-    const tablesResult = await db.all("SELECT name FROM sqlite_master WHERE type='table' AND name='seasons'");
-    if (tablesResult.length === 0) {
-      console.log(`Seasons table not found in guild ${guildId}, initializing schema...`);
-      await initSeasonSchema(guildId);
-    }
-  } catch (error) {
-    console.error(`Error checking for seasons table in guild ${guildId}:`, error);
-    throw new Error(`Failed to verify seasons table: ${error.message}`);
-  }
-  
-  // Insert the new season
-  try {
-    console.log(`Inserting new season into database for guild ${guildId}...`);
-    const result = await db.run(
-      'INSERT INTO seasons (name, start_date) VALUES (?, ?)',
-      [name, startDate]
-    );
-    console.log(`Season created successfully with ID: ${result.lastID} in guild ${guildId}`);
-    return result;
-  } catch (error) {
-    console.error(`Error inserting new season in guild ${guildId}:`, error);
-    throw new Error(`Failed to create new season: ${error.message}`);
-  }
+  return await db.run(
+    'INSERT INTO seasons (name, start_date) VALUES (?, ?)',
+    [name, startDate]
+  );
 }
 
 module.exports = {
   initSeasonSchema,
-  createSeason,
   getActiveSeason,
   endSeason,
   getAllSeasons,
@@ -518,5 +386,5 @@ module.exports = {
   getPlayoffBracket,
   getPlayoffSeries,
   getPlayoffStats,
-  simulatePlayoffSeries
+  createSeason
 };

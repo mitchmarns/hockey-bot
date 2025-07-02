@@ -4,8 +4,10 @@ const seasonModel = require('../database/models/seasonModel');
 
 async function seasons(interaction) {
   try {
+    const guildId = interaction.guildId;
+    
     // Get all seasons
-    const allSeasons = await seasonModel.getAllSeasons();
+    const allSeasons = await seasonModel.getAllSeasons(guildId);
     
     if (allSeasons.length === 0) {
       return interaction.reply('No seasons have been created yet. Use /startseason to create one.');

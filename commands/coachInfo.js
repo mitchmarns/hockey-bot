@@ -16,7 +16,7 @@ async function coachInfo(interaction) {
     
     // Create embed for response
     const embed = new EmbedBuilder()
-      .setColor('#0099ff')
+      .setColor('#8dd2f0')
       .setTitle(`Coach Profile: ${coach.name}`)
       .setDescription(`${coach.coach_type.charAt(0).toUpperCase() + coach.coach_type.slice(1)} Coach of the ${coach.team_city} ${coach.team_name}`)
       .addFields(

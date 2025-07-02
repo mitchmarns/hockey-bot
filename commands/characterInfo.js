@@ -16,7 +16,7 @@ async function characterInfo(interaction) {
     
     // Create embed for response
     const embed = new EmbedBuilder()
-      .setColor('#0099ff')
+      .setColor('#8dd2f0')
       .setTitle(`Character Profile: ${character.name}`)
       .setDescription(`${character.character_type.charAt(0).toUpperCase() + character.character_type.slice(1)} for the ${character.team_city} ${character.team_name}`)
       .addFields(

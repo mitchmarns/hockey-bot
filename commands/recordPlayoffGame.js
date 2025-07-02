@@ -7,9 +7,10 @@ async function recordPlayoffGame(interaction) {
   try {
     const seriesId = interaction.options.getInteger('series');
     const winningTeamName = interaction.options.getString('winningteam');
+    const guildId = interaction.guildId;
     
     // Get the playoff series
-    const series = await seasonModel.getPlayoffSeries(seriesId);
+    const series = await seasonModel.getPlayoffSeries(seriesId, guildId);
     if (!series) {
       return interaction.reply(`Playoff series with ID ${seriesId} not found.`);
     }
@@ -32,7 +33,7 @@ async function recordPlayoffGame(interaction) {
     }
     
     // Record the game result
-    const result = await seasonModel.recordPlayoffGame(seriesId, winningTeamId);
+    const result = await seasonModel.recordPlayoffGame(seriesId, winningTeamId, guildId);
     
     // Create the result embed
     const embed = new EmbedBuilder()

@@ -6,15 +6,16 @@ const teamModel = require('../database/models/teamModel');
 async function findSeries(interaction) {
   try {
     const teamName = interaction.options.getString('team');
+    const guildId = interaction.guildId;
     
     // Find the team
-    const team = await teamModel.getTeamByName(teamName);
+    const team = await teamModel.getTeamByName(teamName, guildId);
     if (!team) {
       return interaction.reply(`Team "${teamName}" not found.`);
     }
     
     // Get active season 
-    const activeSeason = await seasonModel.getActiveSeason();
+    const activeSeason = await seasonModel.getActiveSeason(guildId);
     if (!activeSeason) {
       return interaction.reply('There is no active season.');
     }
@@ -25,7 +26,7 @@ async function findSeries(interaction) {
     }
     
     // Get the playoff bracket
-    const bracket = await seasonModel.getPlayoffBracket(activeSeason.id);
+    const bracket = await seasonModel.getPlayoffBracket(activeSeason.id, guildId);
     
     // Find series with the specified team
     let foundSeries = null;

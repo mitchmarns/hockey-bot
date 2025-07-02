@@ -1,131 +1,83 @@
 // Main entry point for the Hockey Roleplay Discord Bot - Updated for multi-server support
-const { Client, GatewayIntentBits, Events, InteractionType } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { TOKEN } = require('./config/config');
-const { initDatabase } = require('./database/db');
-const { initCharacterSchema } = require('./database/models/characterModel');
-const registerCommands = require('./commands/registerCommands');
 const commandHandlers = require('./commands/commandHandlers');
 
-// Discord client setup
+// Initialize bot with required intents
 const client = new Client({ 
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences
+    GatewayIntentBits.MessageContent
   ] 
 });
 
-// When the bot is ready
+// Set up commands collection
+client.commands = new Collection();
+
+// Bot ready event
 client.once('ready', async () => {
-  console.log(`Logged in as ${client.user.tag}!`);
+  console.log(`Bot logged in as ${client.user.tag}!`);
+  console.log(`Bot is in ${client.guilds.cache.size} servers`);
   
-  // Initialize databases for all guilds the bot is in
-  try {
-    const guilds = client.guilds.cache;
-    
-    for (const [guildId, guild] of guilds) {
-      console.log(`Attempting to initialize database for guild: ${guild.name} (${guildId})`);
-      
-      try {
-        // Initialize the database for this guild
-        await initDatabase(guildId);
-        
-        // Initialize the character schema for this guild
-        await initCharacterSchema(guildId);
-        
-        console.log(`Successfully initialized database and character schema for guild: ${guild.name}`);
-      } catch (guildError) {
-        console.error(`CRITICAL: Failed to initialize database/character schema for guild ${guild.name}:`, guildError);
-      }
-    }
-    
-    console.log('Database initialization process completed');
-    
-    // Register slash commands on startup
+  // Initialize database schemas for all guilds
+  const { initializeDatabase } = require('./database/db');
+  for (const guild of client.guilds.cache.values()) {
     try {
-      await registerCommands();
-      console.log('Slash commands registered successfully');
-    } catch (cmdError) {
-      console.error('Failed to register slash commands:', cmdError);
-    }
-  } catch (error) {
-    console.error('CRITICAL error during database initialization:', error);
-  }
-});
-
-// Improved interaction handler with deferred replies
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-  
-  const { commandName } = interaction;
-  const guildId = interaction.guildId;
-  
-  // Check if command exists in handlers
-  if (commandHandlers[commandName]) {
-    try {
-      
-      // Ensure database is initialized
-      try {
-        const db = require('./database/db');
-        if (typeof db.getDb === 'function') {
-          db.getDb(guildId);
-        }
-      } catch (dbError) {
-        console.warn(`Warning: Database check failed for guild ${guildId}:`, dbError);
-        // Continue anyway
-      }
-      
-      // Execute the command
-      await commandHandlers[commandName](interaction);
+      await initializeDatabase(guild.id);
+      console.log(`Database initialized for guild: ${guild.name} (${guild.id})`);
     } catch (error) {
-      console.error(`Error handling command ${commandName}:`, error);
-      
-        // Check if interaction can still be responded to
-        if (interaction.deferred && !interaction.replied) {
-          try {
-          // Check if it's a database error and provide a more helpful message
-          if (error.message && (
-              error.message.includes('database') || 
-              error.message.includes('SQLITE') || 
-              error.message.includes('no such table')
-            )) {
-              await interaction.reply({ 
-                content: 'A database error occurred. The system is attempting to fix it automatically. Please try your command again in a few seconds.',
-                ephemeral: true 
-              });
-            } else {
-              await interaction.reply({ 
-                content: `An error occurred: ${error.message}`,
-                ephemeral: true
-      });
+      console.error(`Failed to initialize database for guild ${guild.id}:`, error);
     }
-  } catch (replyError) {
-    console.error('Error sending error message:', replyError);
   }
-}
-}
-}
 });
 
-// Add handler for when bot joins a new guild
-client.on('guildCreate', async (guild) => {
-  console.log(`Joined new guild: ${guild.name} (${guild.id})`);
+// Handle slash commands
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isCommand()) return;
+
+  const handler = commandHandlers[interaction.commandName];
   
+  if (!handler) {
+    console.warn(`No handler found for command: ${interaction.commandName}`);
+    return;
+  }
+
   try {
-    // Initialize database for this new guild
-    await initDatabase(guild.id);
+    await handler(interaction);
+  } catch (error) {
+    console.error(`Error executing command ${interaction.commandName}:`, error);
+    
+    const errorMessage = `An error occurred while executing this command: ${error.message}`;
+    
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({ content: errorMessage, ephemeral: true });
+    } else {
+      await interaction.reply({ content: errorMessage, ephemeral: true });
+    }
+  }
+});
+
+// Handle new guild joins
+client.on('guildCreate', async guild => {
+  console.log(`Joined new guild: ${guild.name} (${guild.id})`);
+  try {
+    const { initializeDatabase } = require('./database/db');
+    await initializeDatabase(guild.id);
     console.log(`Database initialized for new guild: ${guild.name}`);
   } catch (error) {
-    console.error(`Error initializing database for new guild ${guild.name}:`, error);
+    console.error(`Failed to initialize database for new guild ${guild.id}:`, error);
   }
 });
 
-// Add global error handler to prevent crashes
-process.on('unhandledRejection', (error) => {
+// Error handling
+client.on('error', error => {
+  console.error('Discord client error:', error);
+});
+
+process.on('unhandledRejection', error => {
   console.error('Unhandled promise rejection:', error);
 });
 
-// Login to Discord with your client's token
+// Start the bot
 client.login(TOKEN);
