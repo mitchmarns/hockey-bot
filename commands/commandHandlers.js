@@ -34,6 +34,7 @@ const teamRoster = require('./teamRoster');
 const myCharacters = require('./myCharacters');
 const deleteCharacter = require('./deleteCharacter');
 const editCharacter = require('./editCharacter');
+const setTeamColor = require('./setTeamColor');
 
 // Export all handlers as a single object
 module.exports = {
@@ -72,4 +73,5 @@ module.exports = {
   mycharacters: myCharacters,
   deletecharacter: deleteCharacter,
   editcharacter: editCharacter,
+  setteamcolor: setTeamColor,
 };

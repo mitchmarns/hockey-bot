@@ -32,7 +32,11 @@ const commands = [
     .addStringOption(option => 
       option.setName('logo')
         .setDescription('Team logo URL')
-        .setRequired(true)),
+        .setRequired(true))
+    .addStringOption(option => 
+      option.setName('color')
+        .setDescription('Team color in hex format (e.g., #FF0000)')
+        .setRequired(false)),
   
   new SlashCommandBuilder()
     .setName('schedulegame')
@@ -598,6 +602,17 @@ new SlashCommandBuilder()
     option.setName('experience')
       .setDescription('New experience (coaches only)')
       .setRequired(false)),
+  new SlashCommandBuilder()
+    .setName('setteamcolor')
+    .setDescription('Set or update a team\'s color')
+    .addStringOption(option => 
+      option.setName('team')
+        .setDescription('Team name')
+        .setRequired(true))
+    .addStringOption(option => 
+      option.setName('color')
+        .setDescription('Team color in hex format (e.g., #FF0000)')
+        .setRequired(true)),
 ];
 
 async function registerCommands() {
@@ -613,12 +628,17 @@ async function registerCommands() {
 
     await rest.put(
       Routes.applicationCommands(CLIENT_ID),
-      { body: commands },
+      { body: commands }
     );
-
+    
     console.log('==== SUCCESSFULLY RELOADED COMMANDS ====');
   } catch (error) {
     console.error('Error registering commands:', error);
+
+
+
+
+
   }
 }
 
