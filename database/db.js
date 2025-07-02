@@ -55,6 +55,7 @@ async function initDatabase(guildId) {
         city TEXT NOT NULL,
         logo TEXT,
         colors TEXT,
+        team_color TEXT, -- New field for hex color codes
         wins INTEGER DEFAULT 0,
         losses INTEGER DEFAULT 0,
         ties INTEGER DEFAULT 0,

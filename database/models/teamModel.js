@@ -76,35 +76,19 @@ async function getTeamStandings(guildId) {
 }
 
 // Create a team
-async function createTeam(name, city, logo, guildId) {
+async function createTeam(name, city, logo, teamColor, guildId) {
   try {
     const db = getDb(guildId);
     
-    // Check table schema first
-    console.log('Checking teams table schema...');
-    const tableInfo = await db.all('PRAGMA table_info(teams)');
-    console.log('Teams table columns:', tableInfo.map(col => col.name));
-    
-    // Check if logo column exists
-    const hasLogoColumn = tableInfo.some(col => col.name === 'logo');
-    if (!hasLogoColumn) {
-      console.error('Logo column does not exist in teams table!');
-      
-      // Check if colors column exists instead
-      const hasColorsColumn = tableInfo.some(col => col.name === 'colors');
-      if (hasColorsColumn) {
-        console.log('Found colors column instead of logo');
-        throw new Error('Database schema needs updating: column "colors" should be renamed to "logo"');
-      } else {
-        throw new Error('Neither "logo" nor "colors" column found in teams table');
-      }
+    // Validate team color if provided
+    if (teamColor && !isValidHexColor(teamColor)) {
+      throw new Error('Invalid color format. Use hex format like #FF0000');
     }
     
-    // Insert the team
-    console.log(`Inserting team: ${name}, ${city}, ${logo}`);
+    console.log(`Inserting team: ${name}, ${city}, ${logo}, ${teamColor}`);
     return await db.run(
-      'INSERT INTO teams (name, city, logo) VALUES (?, ?, ?)',
-      [name, city, logo]
+      'INSERT INTO teams (name, city, logo, team_color) VALUES (?, ?, ?, ?)',
+      [name, city, logo, teamColor]
     );
   } catch (error) {
     console.error('Error in createTeam:', error);
@@ -138,6 +122,26 @@ async function getTeamById(id, guildId) {
     console.error('Error in getTeamById:', error);
     throw error;
   }
+}
+
+// Update team color
+async function updateTeamColor(teamId, color, guildId) {
+  try {
+    if (!isValidHexColor(color)) {
+      throw new Error('Invalid color format. Use hex format like #FF0000');
+    }
+    
+    const db = getDb(guildId);
+    return await db.run('UPDATE teams SET team_color = ? WHERE id = ?', [color, teamId]);
+  } catch (error) {
+    console.error('Error in updateTeamColor:', error);
+    throw error;
+  }
+}
+
+// Helper function to validate hex colors
+function isValidHexColor(color) {
+  return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
 }
 
 // Add to teamModel.js - Team statistics
@@ -183,5 +187,6 @@ module.exports = {
   createTeam,
   updateTeamRecord,
   getTeamById,
+  updateTeamColor,
   extendTeamSchema
 };

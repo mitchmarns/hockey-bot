@@ -1,6 +1,7 @@
 // Update playerInfo.js to display face claim
 const playerModel = require('../database/models/playerModel');
 const skillsModel = require('../database/models/skillsModel');
+const teamModel = require('../database/models/teamModel');
 const { EmbedBuilder } = require('discord.js');
 
 async function playerInfo(interaction) {
@@ -14,12 +15,18 @@ async function playerInfo(interaction) {
     return interaction.reply(`Player "${playerName}" doesn't exist.`);
   }
 
+  // Get team data for color
+  const team = player.team_id ? await teamModel.getTeamById(player.team_id, guildId) : null;
+  
   // Get player skills
   const skills = await skillsModel.getPlayerSkills(player.id, guildId);
   
+  // Use team color if available
+  const embedColor = (team && team.team_color) ? team.team_color : '#0099ff';
+  
   // Create hockey card style embed
   const embed = new EmbedBuilder()
-    .setColor('#0099ff') // Changed from hockey red
+    .setColor(embedColor) // Changed from hockey red
     .setTitle(`${player.name.toUpperCase()}`)
     .setDescription(`**${player.team_name?.toUpperCase() || 'FREE AGENT'}**`)
     .setTimestamp();

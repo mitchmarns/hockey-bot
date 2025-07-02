@@ -47,14 +47,17 @@ function createErrorEmbed(title, description) {
  * Create a player info embed with enhanced hockey stats
  * @param {Object} player - Player data
  * @param {Object} skills - Player skills data 
- * @param {string} [color='#808080'] 
+ * @param {Object} team - Team data with color information
  * @returns {EmbedBuilder} - Discord embed object
  */
-function createPlayerEmbed(player, skills = null) {
+function createPlayerEmbed(player, skills = null, team = null) {
+  // Use team color if available, otherwise default to blue
+  const embedColor = (team && team.team_color) ? team.team_color : '#0099ff';
+  
   const embed = createEmbed(
     `${player.name.toUpperCase()}`,
     `**${player.team_name?.toUpperCase() || 'FREE AGENT'}**`,
-    '#0099ff' // Changed from hockey red to blue
+    embedColor
   );
   
   // Main player info with better formatting
@@ -184,7 +187,8 @@ function createPlayerEmbed(player, skills = null) {
 function createTeamEmbed(team, roster = null) {
   const embed = createEmbed(
     `${team.city} ${team.name}`,
-    `Record: ${team.wins}-${team.losses}-${team.ties} (${team.wins * 2 + team.ties} pts)`
+    `Record: ${team.wins}-${team.losses}-${team.ties} (${team.wins * 2 + team.ties} pts)`,
+    team.team_color // Use team color for the embed
   );
   
   // Add logo if available
