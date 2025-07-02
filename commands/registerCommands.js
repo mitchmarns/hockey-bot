@@ -626,19 +626,16 @@ async function registerCommands() {
     // Log the names of all commands being registered
     commands.forEach(cmd => console.log(`- Registering: ${cmd.name}`));
 
+    // Clear existing commands first, then register new ones
     await rest.put(
       Routes.applicationCommands(CLIENT_ID),
       { body: commands }
     );
     
     console.log('==== SUCCESSFULLY RELOADED COMMANDS ====');
+    console.log('Commands may take up to 5 minutes to appear in Discord');
   } catch (error) {
     console.error('Error registering commands:', error);
-
-
-
-
-
   }
 }
 
