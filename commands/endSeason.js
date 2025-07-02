@@ -26,7 +26,7 @@ async function endSeason(interaction) {
     // Create the season summary embed
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`🏆 Season Complete: ${activeSeason.name}`)
+      .setTitle(`Season Complete: ${activeSeason.name}`)
       .setDescription(`The ${activeSeason.name} regular season has officially ended!`)
       .addFields(
         { name: 'Season', value: activeSeason.name, inline: true },

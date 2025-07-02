@@ -19,8 +19,8 @@ async function playerInfo(interaction) {
   
   // Create hockey card style embed
   const embed = new EmbedBuilder()
-    .setColor('#C8102E') // Hockey red
-    .setTitle(`🏒 ${player.name.toUpperCase()}`)
+    .setColor('#0099ff') // Changed from hockey red
+    .setTitle(`${player.name.toUpperCase()}`)
     .setDescription(`**${player.team_name?.toUpperCase() || 'FREE AGENT'}**`)
     .setTimestamp();
   
@@ -35,7 +35,7 @@ async function playerInfo(interaction) {
   }
   
   embed.addFields({ 
-    name: '📊 PLAYER INFO', 
+    name: 'PLAYER INFO', 
     value: playerInfo.join('  •  '), 
     inline: false 
   });
@@ -74,7 +74,7 @@ async function playerInfo(interaction) {
   }
   
   embed.addFields({ 
-    name: '🎯 CAREER STATS', 
+    name: 'CAREER STATS', 
     value: stats.join('  •  '), 
     inline: false 
   });
@@ -83,12 +83,12 @@ async function playerInfo(interaction) {
   if (skills) {
     const skillBars = [];
     const skillNames = {
-      skating: '⛸️ Skating',
-      shooting: '🥅 Shooting', 
-      passing: '🎯 Passing',
-      defense: '🛡️ Defense',
-      physical: '💪 Physical',
-      goaltending: '🥅 Goaltending'
+      skating: 'Skating',
+      shooting: 'Shooting', 
+      passing: 'Passing',
+      defense: 'Defense',
+      physical: 'Physical',
+      goaltending: 'Goaltending'
     };
     
     Object.entries(skillNames).forEach(([key, name]) => {
@@ -98,7 +98,7 @@ async function playerInfo(interaction) {
     });
     
     embed.addFields({ 
-      name: '⚡ SKILLS', 
+      name: 'SKILLS', 
       value: skillBars.join('\n'), 
       inline: false 
     });
@@ -112,7 +112,7 @@ async function playerInfo(interaction) {
   
   if (personalDetails.length > 0) {
     embed.addFields({ 
-      name: '👨‍🦱 PERSONAL', 
+      name: 'PERSONAL', 
       value: personalDetails.join('\n'), 
       inline: false 
     });

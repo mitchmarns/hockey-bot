@@ -95,7 +95,7 @@ async function simulateSeries(interaction) {
     
     // Add the final result
     embed.addFields({
-      name: '🏆 Series Winner',
+      name: 'Series Winner',
       value: `${seriesResult.winner} wins ${seriesResult.finalScore}`,
     });
     

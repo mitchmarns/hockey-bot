@@ -52,9 +52,9 @@ function createErrorEmbed(title, description) {
  */
 function createPlayerEmbed(player, skills = null) {
   const embed = createEmbed(
-    `🏒 ${player.name.toUpperCase()}`,
+    `${player.name.toUpperCase()}`,
     `**${player.team_name?.toUpperCase() || 'FREE AGENT'}**`,
-    '#C8102E' // Hockey red
+    '#0099ff' // Changed from hockey red to blue
   );
   
   // Main player info with better formatting
@@ -68,7 +68,7 @@ function createPlayerEmbed(player, skills = null) {
   }
   
   embed.addFields({ 
-    name: '📊 PLAYER INFO', 
+    name: 'PLAYER INFO', 
     value: playerInfo.join('  •  '), 
     inline: false 
   });
@@ -96,7 +96,7 @@ function createPlayerEmbed(player, skills = null) {
     ];
     
     embed.addFields({ 
-      name: '🥅 GOALIE STATS', 
+      name: 'GOALIE STATS', 
       value: goalieStats.join('  •  '), 
       inline: false 
     });
@@ -118,7 +118,7 @@ function createPlayerEmbed(player, skills = null) {
     if (player.penalty_minutes) skaterStats.push(`**PIM:** ${player.penalty_minutes}`);
     
     embed.addFields({ 
-      name: '🎯 PLAYER STATS', 
+      name: 'PLAYER STATS', 
       value: skaterStats.join('  •  '), 
       inline: false 
     });
@@ -131,7 +131,7 @@ function createPlayerEmbed(player, skills = null) {
       const faceoffPct = totalFaceoffs > 0 ? ((faceoffWins / totalFaceoffs) * 100).toFixed(1) : '0.0';
       
       embed.addFields({ 
-        name: '⚡ FACEOFFS', 
+        name: 'FACEOFFS', 
         value: `**FO%:** ${faceoffPct}%  •  **W:** ${faceoffWins}  •  **L:** ${faceoffLosses}`, 
         inline: false 
       });
@@ -142,12 +142,12 @@ function createPlayerEmbed(player, skills = null) {
   if (skills) {
     const skillBars = [];
     const skillNames = {
-      skating: '⛸️ Skating',
-      shooting: '🥅 Shooting', 
-      passing: '🎯 Passing',
-      defense: '🛡️ Defense',
-      physical: '💪 Physical',
-      goaltending: '🥅 Goaltending'
+      skating: 'Skating',
+      shooting: 'Shooting', 
+      passing: 'Passing',
+      defense: 'Defense',
+      physical: 'Physical',
+      goaltending: 'Goaltending'
     };
     
     Object.entries(skillNames).forEach(([key, name]) => {
@@ -157,7 +157,7 @@ function createPlayerEmbed(player, skills = null) {
     });
     
     embed.addFields({ 
-      name: '⚡ SKILLS', 
+      name: 'SKILLS', 
       value: skillBars.join('\n'), 
       inline: false 
     });

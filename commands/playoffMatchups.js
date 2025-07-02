@@ -33,7 +33,7 @@ async function playoffMatchups(interaction) {
     // Create the matchups embed
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`🏆 Playoff Matchups: ${season.name}`)
+      .setTitle(`Playoff Matchups: ${season.name}`)
       .setDescription('Current playoff series and their status')
       .setTimestamp();
     

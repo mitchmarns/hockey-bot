@@ -68,7 +68,7 @@ async function recordPlayoffGame(interaction) {
       // Add championship information if this was the finals
       if (result.isChampionship) {
         embed.setColor('#FFD700'); // Gold for the championship
-        embed.setTitle(`🏆 CHAMPIONS: ${seriesWinner} 🏆`);
+        embed.setTitle(`CHAMPIONS: ${seriesWinner}`);
         embed.addFields({ 
           name: 'League Champions', 
           value: `Congratulations to the ${seriesWinner} on winning the ${series.season_name} Championship!` 

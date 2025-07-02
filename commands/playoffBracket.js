@@ -32,7 +32,7 @@ async function playoffBracket(interaction) {
     // Create the bracket visualization
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`🏆 Playoff Bracket: ${season.name}`)
+      .setTitle(`Playoff Bracket: ${season.name}`)
       .setDescription('Current playoff matchups and results')
       .setTimestamp();
     

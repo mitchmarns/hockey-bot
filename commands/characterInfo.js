@@ -20,10 +20,10 @@ async function characterInfo(interaction) {
     
     // Different styling based on character type
     if (character.character_type === 'player') {
-      // Player card styling - use hockey colors
+      // Player card styling - use neutral colors
       embed
-        .setColor('#C8102E') // Hockey red
-        .setTitle(`🏒 ${character.name.toUpperCase()}`)
+        .setColor('#0099ff') // Changed from hockey red
+        .setTitle(`${character.name.toUpperCase()}`)
         .setDescription(`**${character.team_city?.toUpperCase() || ''} ${character.team_name?.toUpperCase() || ''}**`);
       
       // Main player info section
@@ -44,7 +44,7 @@ async function characterInfo(interaction) {
       
       if (playerInfo.length > 0) {
         embed.addFields({ 
-          name: '📊 PLAYER INFO', 
+          name: 'PLAYER INFO', 
           value: playerInfo.join('  •  '), 
           inline: false 
         });
@@ -62,7 +62,7 @@ async function characterInfo(interaction) {
         
         if (stats.length > 0) {
           embed.addFields({ 
-            name: '🎯 CAREER STATS', 
+            name: 'CAREER STATS', 
             value: stats.join('  •  '), 
             inline: false 
           });
@@ -73,7 +73,7 @@ async function characterInfo(interaction) {
       // Coach card styling
       embed
         .setColor('#003087') // Professional blue
-        .setTitle(`👔 COACH ${character.name.toUpperCase()}`)
+        .setTitle(`COACH ${character.name.toUpperCase()}`)
         .setDescription(`**${character.team_city?.toUpperCase() || ''} ${character.team_name?.toUpperCase() || ''}**`);
       
       // Coach info section
@@ -84,7 +84,7 @@ async function characterInfo(interaction) {
       
       if (coachInfo.length > 0) {
         embed.addFields({ 
-          name: '📋 COACHING INFO', 
+          name: 'COACHING INFO', 
           value: coachInfo.join('\n'), 
           inline: false 
         });
@@ -94,12 +94,12 @@ async function characterInfo(interaction) {
       // Staff/Civilian card styling
       embed
         .setColor('#FFB81C') // Gold/yellow for staff
-        .setTitle(`👤 ${character.name.toUpperCase()}`)
+        .setTitle(`${character.name.toUpperCase()}`)
         .setDescription(`**${character.team_city?.toUpperCase() || ''} ${character.team_name?.toUpperCase() || ''}**`);
       
       if (character.job) {
         embed.addFields({ 
-          name: '💼 ROLE', 
+          name: 'ROLE', 
           value: `**${character.job.toUpperCase()}**`, 
           inline: false 
         });
@@ -114,7 +114,7 @@ async function characterInfo(interaction) {
     
     if (personalDetails.length > 0) {
       embed.addFields({ 
-        name: '👨‍🦱 PERSONAL', 
+        name: 'PERSONAL', 
         value: personalDetails.join('\n'), 
         inline: false 
       });
@@ -127,7 +127,7 @@ async function characterInfo(interaction) {
         character.biography;
       
       embed.addFields({ 
-        name: '📝 BIOGRAPHY', 
+        name: 'BIOGRAPHY', 
         value: bio, 
         inline: false 
       });

@@ -61,7 +61,7 @@ async function playoffStats(interaction) {
     // Create the stats embed
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`🏆 Playoff Stats: ${season.name}`)
+      .setTitle(`Playoff Stats: ${season.name}`)
       .setDescription(`Showing top ${topPlayers.length} players by ${statType}`)
       .setTimestamp();
     

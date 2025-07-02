@@ -16,7 +16,7 @@ async function seasons(interaction) {
     // Create the seasons list embed
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle('🏒 Hockey League Seasons')
+      .setTitle('Hockey League Seasons')
       .setDescription('List of all seasons and their status')
       .setTimestamp();
     

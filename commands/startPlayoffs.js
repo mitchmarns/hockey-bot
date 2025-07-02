@@ -53,7 +53,7 @@ async function startPlayoffs(interaction) {
     // Create the playoff announcement embed
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`🏆 Playoff Tournament: ${activeSeason.name}`)
+      .setTitle(`Playoff Tournament: ${activeSeason.name}`)
       .setDescription(`The ${activeSeason.name} playoffs have officially begun with the top ${numTeams} teams!`)
       .setTimestamp();
     

@@ -84,7 +84,7 @@ async function startSeason(interaction) {
     // 4. Create response embed
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle('🏒 New Season Started!')
+      .setTitle('New Season Started!')
       .setDescription(`The ${seasonName} season has officially begun!`)
       .addFields(
         { name: 'Season Name', value: seasonName, inline: true },

@@ -381,7 +381,7 @@ async function simulateGame(interaction) {
           `**PIM**: ${homeTeam.name} ${gameStats.home.penaltyMinutes}, ${awayTeam.name} ${gameStats.away.penaltyMinutes}`
         },
         { name: 'Season', value: activeSeason.name, inline: true },
-        { name: 'Game Type', value: isPlayoff ? '🏆 Playoff' : 'Regular Season', inline: true }
+        { name: 'Game Type', value: isPlayoff ? 'Playoff' : 'Regular Season', inline: true }
       )
       .setTimestamp();
     
@@ -413,7 +413,7 @@ async function simulateGame(interaction) {
               `${awayTeam.city} ${awayTeam.name}`;
               
             embed.addFields({ 
-              name: '🎊 Series Update 🎊', 
+              name: 'Series Update', 
               value: seriesResult.isChampionship ? 
                 `${winningTeam} WINS THE CHAMPIONSHIP!` :
                 `${winningTeam} wins the series and advances!`

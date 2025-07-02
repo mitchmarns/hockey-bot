@@ -43,7 +43,7 @@ async function seasonSummary(interaction) {
       .setTitle(`Season Summary: ${season.name}`)
       .setDescription(`Statistics and information for the ${season.name}`)
       .addFields(
-        { name: 'Status', value: season.is_active ? '🟢 Active' : '🔴 Completed', inline: true },
+        { name: 'Status', value: season.is_active ? 'Active' : 'Completed', inline: true },
         { name: 'Start Date', value: season.start_date, inline: true }
       )
       .setTimestamp();

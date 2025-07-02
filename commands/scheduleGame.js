@@ -91,7 +91,7 @@ async function scheduleGame(interaction) {
     // Create response embed
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(isPlayoff ? '🏆 Playoff Game Scheduled' : 'Game Scheduled')
+      .setTitle(isPlayoff ? 'Playoff Game Scheduled' : 'Game Scheduled')
       .setDescription(`${homeTeam.city} ${homeTeam.name} vs ${awayTeam.city} ${awayTeam.name}`)
       .addFields(
         { name: 'Date', value: date, inline: true },

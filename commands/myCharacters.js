@@ -36,7 +36,7 @@ async function myCharacters(interaction) {
         return `**${p.name}** - ${p.team_city} ${p.team_name} ${p.position ? `(${p.position.replace(/_/g, ' ')})` : ''}`;
       }).join('\n');
       
-      embed.addFields({ name: '👤 Players', value: playerList });
+      embed.addFields({ name: 'Players', value: playerList });
     }
     
     // Add coaches section if there are coaches
@@ -45,7 +45,7 @@ async function myCharacters(interaction) {
         return `**${c.name}** - ${c.team_city} ${c.team_name} ${c.job ? `(${c.job})` : ''}`;
       }).join('\n');
       
-      embed.addFields({ name: '📋 Coaches', value: coachList });
+      embed.addFields({ name: 'Coaches', value: coachList });
     }
     
     // Add staff section if there are staff
@@ -54,7 +54,7 @@ async function myCharacters(interaction) {
         return `**${s.name}** - ${s.team_city} ${s.team_name} ${s.job ? `(${s.job})` : ''}`;
       }).join('\n');
       
-      embed.addFields({ name: '🧰 Staff', value: staffList });
+      embed.addFields({ name: 'Staff', value: staffList });
     }
     
     // Add civilians section if there are civilians
@@ -63,7 +63,7 @@ async function myCharacters(interaction) {
         return `**${c.name}** - ${c.team_city} ${c.team_name} ${c.job ? `(${c.job})` : ''}`;
       }).join('\n');
       
-      embed.addFields({ name: '🏙️ Civilians', value: civilianList });
+      embed.addFields({ name: 'Civilians', value: civilianList });
     }
     
     await interaction.reply({ embeds: [embed], ephemeral: true });

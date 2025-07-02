@@ -108,7 +108,7 @@ async function roll(interaction) {
   }
   
   embed.addFields(
-    { name: 'Result', value: success ? 'Success! 🎯' : 'Failure! ❌', inline: true },
+    { name: 'Result', value: success ? 'Success!' : 'Failure!', inline: true },
     { name: 'Margin', value: `${Math.abs(roll - skill)}`, inline: true }
   );
   
