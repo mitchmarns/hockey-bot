@@ -52,12 +52,19 @@ async function createTeam(interaction) {
     console.log('name:', interaction.options.getString('name'));
     console.log('city:', interaction.options.getString('city'));
     console.log('logo:', interaction.options.getString('logo'));
+    console.log('color:', interaction.options.getString('color'));
     console.log('guildId:', interaction.guildId);
     
     const name = interaction.options.getString('name');
     const city = interaction.options.getString('city');
     const logo = interaction.options.getString('logo');
+    const teamColor = interaction.options.getString('color') || '#808080';
     const guildId = interaction.guildId;
+    
+    // Validate color format if provided
+    if (teamColor && !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(teamColor)) {
+      return interaction.reply('Invalid color format. Use hex format like #FF0000 or #F00');
+    }
     
     // Check if team already exists
     const existingTeam = await teamModel.getTeamByName(name, guildId);
@@ -68,7 +75,7 @@ async function createTeam(interaction) {
     // Create team with error handling
     console.log('Creating team in database...');
     try {
-      await teamModel.createTeam(name, city, logo, guildId);
+      await teamModel.createTeam(name, city, logo, teamColor, guildId);
       console.log('Team created successfully in database');
     } catch (dbError) {
       console.error('Database error when creating team:', dbError);
@@ -81,12 +88,13 @@ async function createTeam(interaction) {
     // Create embed for response
     console.log('Creating embed response...');
     const embed = new EmbedBuilder()
-      .setColor('#0099ff')
+      .setColor(teamColor)
       .setTitle('New Team Created')
       .setDescription(`The ${city} ${name} have joined the league!`)
       .addFields(
         { name: 'Team Name', value: `${city} ${name}`, inline: true },
-        { name: 'Record', value: '0-0-0', inline: true }
+        { name: 'Record', value: '0-0-0', inline: true },
+        { name: 'Team Color', value: teamColor, inline: true }
       )
       .setTimestamp();
     

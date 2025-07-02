@@ -190,6 +190,7 @@ async function createBotTeam(interaction) {
     const name = interaction.options.getString('name');
     const city = interaction.options.getString('city');
     const logo = interaction.options.getString('logo') || null;
+    const teamColor = interaction.options.getString('color') || '#808080';
     const skillLevel = interaction.options.getInteger('skill') || 50;
     const guildId = interaction.guildId;
     
@@ -222,6 +223,7 @@ async function createBotTeam(interaction) {
         name: teamName,
         city: city,
         logo: logo,
+        team_color: teamColor,
         wins: 0,
         losses: 0,
         ties: 0,
@@ -272,13 +274,14 @@ async function createBotTeam(interaction) {
       
       // Create embed for response
       const embed = new EmbedBuilder()
-        .setColor('#0099ff')
+        .setColor(teamColor)
         .setTitle('Bot Team Created')
         .setDescription(`The ${city} ${teamName} have joined the league as an AI-controlled team!`)
         .addFields(
           { name: 'Team Name', value: `${city} ${teamName}`, inline: true },
           { name: 'Skill Level', value: `${skillLevel}/100`, inline: true },
-          { name: 'Players', value: `${players.length} AI players created`, inline: true }
+          { name: 'Players', value: `${players.length} AI players created`, inline: true },
+          { name: 'Team Color', value: teamColor, inline: true }
         )
         .setTimestamp();
       
