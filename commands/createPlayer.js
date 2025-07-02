@@ -110,10 +110,10 @@ async function createPlayer(interaction) {
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle('New Player Created')
-      .setDescription(`${name} has been added to ${teamName} as a ${position.replace('_', ' ')}!`)
+      .setDescription(`${name} has been added to ${teamName} as a ${position.replace(/_/g, ' ')}!`)
       .addFields(
         { name: 'Name', value: name, inline: true },
-        { name: 'Position', value: position.replace('_', ' '), inline: true },
+        { name: 'Position', value: position.replace(/_/g, ' '), inline: true },
         { name: 'Number', value: number.toString(), inline: true }
       )
       .setTimestamp();

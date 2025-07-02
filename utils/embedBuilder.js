@@ -57,7 +57,7 @@ function createPlayerEmbed(player, skills = null) {
   );
   
   embed.addFields(
-    { name: 'Position', value: player.position.replace('_', ' '), inline: true },
+    { name: 'Position', value: player.position.replace(/_/g, ' '), inline: true },
     { name: 'Games', value: player.games_played.toString(), inline: true }
   );
 

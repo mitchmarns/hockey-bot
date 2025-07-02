@@ -30,7 +30,7 @@ async function removePlayer(interaction) {
     const embed = new EmbedBuilder()
       .setColor('#FF0000')
       .setTitle(`Removing Player: ${player.name}`)
-      .setDescription(`${player.name} (#${player.number}) - ${player.position.replace('_', ' ')}`)
+      .setDescription(`${player.name} (#${player.number}) - ${player.position.replace(/_/g, ' ')}`)
       .addFields(
         { name: 'Team', value: player.team_name || 'No Team', inline: true },
         { name: 'Games Played', value: player.games_played.toString(), inline: true },

@@ -70,7 +70,7 @@ async function playoffStats(interaction) {
     
     topPlayers.forEach((player, index) => {
       const points = player.goals + player.assists;
-      leaderboardText += `${index + 1}. **${player.name}** (#${player.number}, ${player.position.replace('_', ' ')}) - `;
+      leaderboardText += `${index + 1}. **${player.name}** (#${player.number}, ${player.position.replace(/_/g, ' ')}) - `;
       
       if (statType === 'points') {
         leaderboardText += `${points} pts (${player.goals}G, ${player.assists}A)`;

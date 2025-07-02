@@ -28,7 +28,7 @@ async function characterInfo(interaction) {
     
     // Add type-specific fields
     if (character.character_type === 'player') {
-      if (character.position) embed.addFields({ name: 'Position', value: character.position, inline: true });
+      if (character.position) embed.addFields({ name: 'Position', value: character.position.replace(/_/g, ' '), inline: true });
       if (character.jersey_number) embed.addFields({ name: 'Jersey #', value: character.jersey_number.toString(), inline: true });
       if (character.height) embed.addFields({ name: 'Height', value: character.height, inline: true });
       if (character.weight) embed.addFields({ name: 'Weight', value: character.weight, inline: true });

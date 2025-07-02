@@ -67,7 +67,7 @@ async function editCharacter(interaction) {
       const position = interaction.options.getString('position');
       if (position) {
         updates.position = position;
-        changedFields.push(`Position → ${position}`);
+        changedFields.push(`Position → ${position.replace(/_/g, ' ')}`);
       }
 
       const jersey = interaction.options.getInteger('jersey');

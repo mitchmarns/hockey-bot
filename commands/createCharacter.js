@@ -76,7 +76,7 @@ async function createCharacter(interaction) {
     // Add type-specific fields to embed
     if (charType === 'player') {
       if (job) embed.addFields({ name: 'Job', value: job, inline: true });
-      if (characterData.position) embed.addFields({ name: 'Position', value: characterData.position, inline: true });
+      if (characterData.position) embed.addFields({ name: 'Position', value: characterData.position.replace(/_/g, ' '), inline: true });
       if (characterData.jerseyNumber) embed.addFields({ name: 'Jersey #', value: characterData.jerseyNumber.toString(), inline: true });
       if (characterData.height) embed.addFields({ name: 'Height', value: characterData.height, inline: true });
       if (characterData.weight) embed.addFields({ name: 'Weight', value: characterData.weight, inline: true });

@@ -90,7 +90,7 @@ async function stats(interaction) {
         statDisplay = `${ppg} points per game`;
       }
       
-      const positionDisplay = player.position ? player.position.replace('_', ' ') : '';
+      const positionDisplay = player.position ? player.position.replace(/_/g, ' ') : '';
       leaderboardText += `${index + 1}. **${player.name}** ${player.jersey_number ? `(#${player.jersey_number}` : ''} ${positionDisplay ? `, ${positionDisplay}` : ''}) - ${statDisplay} - ${player.team_name}\n`;
     });
     

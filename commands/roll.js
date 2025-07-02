@@ -99,7 +99,7 @@ async function roll(interaction) {
     .setTitle('Skill Check');
   
   if (playerInfo) {
-    embed.setDescription(`${playerInfo.name} (${playerInfo.position.replace('_', ' ')}) rolled a ${roll} vs ${skillLabel} ${skill}`);
+    embed.setDescription(`${playerInfo.name} (${playerInfo.position.replace(/_/g, ' ')}) rolled a ${roll} vs ${skillLabel} ${skill}`);
     if (playerInfo.image_url) {
       embed.setThumbnail(playerInfo.image_url);
     }

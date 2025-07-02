@@ -51,7 +51,7 @@ async function teamRoster(interaction) {
         let details = p.name;
         if (p.position || p.jersey_number) {
           details += ` (${[
-            p.position ? p.position : null,
+            p.position ? p.position.replace(/_/g, ' ') : null,
             p.jersey_number ? `#${p.jersey_number}` : null
           ].filter(Boolean).join(', ')})`;
         }

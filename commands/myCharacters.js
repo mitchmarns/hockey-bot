@@ -33,7 +33,7 @@ async function myCharacters(interaction) {
     // Add players section if there are players
     if (playerCharacters.length > 0) {
       const playerList = playerCharacters.map(p => {
-        return `**${p.name}** - ${p.team_city} ${p.team_name} ${p.position ? `(${p.position})` : ''}`;
+        return `**${p.name}** - ${p.team_city} ${p.team_name} ${p.position ? `(${p.position.replace(/_/g, ' ')})` : ''}`;
       }).join('\n');
       
       embed.addFields({ name: '👤 Players', value: playerList });

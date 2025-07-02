@@ -72,7 +72,7 @@ async function tradeHistory(interaction) {
           `${trade.to_team_city} ${trade.to_team_name}`;
         
         fieldName = `${date} - ${tradeDirection} ${trade.player_name}`;
-        fieldValue = `**With**: ${otherTeam}\n**Position**: ${trade.position.replace('_', ' ')}\n${trade.notes ? `**Notes**: ${trade.notes}` : ''}`;
+        fieldValue = `**With**: ${otherTeam}\n**Position**: ${trade.position.replace(/_/g, ' ')}\n${trade.notes ? `**Notes**: ${trade.notes}` : ''}`;
       } else {
         // Standard format for player or league view
         fieldName = `${date} - ${trade.player_name}`;

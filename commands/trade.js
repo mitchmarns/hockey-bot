@@ -60,7 +60,7 @@ async function trade(interaction) {
       .setDescription(`${player.name} has been traded from the ${currentTeam.city} ${currentTeam.name} to the ${newTeam.city} ${newTeam.name}!`)
       .addFields(
         { name: 'Player', value: `${player.name} (#${player.number})`, inline: true },
-        { name: 'Position', value: player.position.replace('_', ' '), inline: true },
+        { name: 'Position', value: player.position.replace(/_/g, ' '), inline: true },
         { name: 'New Team', value: `${newTeam.city} ${newTeam.name}`, inline: true }
       )
       .setTimestamp();
