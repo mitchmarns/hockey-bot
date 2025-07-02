@@ -42,21 +42,21 @@ async function coachingStaff(interaction) {
     // Add head coaches
     if (headCoaches.length > 0) {
       const headCoachInfo = headCoaches.map(c => `${c.name}${c.image_url ? ' 🖼️' : ''}`).join('\n');
-      embed.addFields({ name: '# Head Coach', value: headCoachInfo });
+      embed.addFields({ name: 'Head Coach', value: headCoachInfo });
     } else {
-      embed.addFields({ name: '# Head Coach', value: 'Position Vacant' });
+      embed.addFields({ name: 'Head Coach', value: 'Position Vacant' });
     }
     
     // Add assistant coaches
     if (assistantCoaches.length > 0) {
       const assistantCoachInfo = assistantCoaches.map(c => `${c.name}${c.image_url ? ' 🖼️' : ''}`).join('\n');
-      embed.addFields({ name: '# Assistant Coaches', value: assistantCoachInfo });
+      embed.addFields({ name: 'Assistant Coaches', value: assistantCoachInfo });
     }
     
     // Add goalie coaches
     if (goalieCoaches.length > 0) {
       const goalieCoachInfo = goalieCoaches.map(c => `${c.name}${c.image_url ? ' 🖼️' : ''}`).join('\n');
-      embed.addFields({ name: '# Goalie Coaches', value: goalieCoachInfo });
+      embed.addFields({ name: 'Goalie Coaches', value: goalieCoachInfo });
     }
     
     // Add other coaching staff
@@ -68,7 +68,7 @@ async function coachingStaff(interaction) {
         return info;
       }).join('\n');
       
-      embed.addFields({ name: '# Other Staff', value: otherCoachInfo });
+      embed.addFields({ name: 'Other Staff', value: otherCoachInfo });
     }
     
     await interaction.reply({ embeds: [embed] });
