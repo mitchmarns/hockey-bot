@@ -534,6 +534,70 @@ new SlashCommandBuilder()
     option.setName('name')
       .setDescription('Character name')
       .setRequired(true)),
+
+// Edit character command
+new SlashCommandBuilder()
+  .setName('editcharacter')
+  .setDescription('Edit one of your characters')
+  .addStringOption(option => 
+    option.setName('name')
+      .setDescription('Character name')
+      .setRequired(true))
+  .addStringOption(option => 
+    option.setName('team')
+      .setDescription('New team name')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('job')
+      .setDescription('New job')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('bio')
+      .setDescription('New biography')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('image')
+      .setDescription('New character image URL')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('faceclaim')
+      .setDescription('New face claim')
+      .setRequired(false))
+  // Player-specific options
+  .addStringOption(option => 
+    option.setName('position')
+      .setDescription('New position (players only)')
+      .setRequired(false)
+      .addChoices(...POSITIONS))
+  .addIntegerOption(option => 
+    option.setName('jersey')
+      .setDescription('New jersey number (players only)')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('height')
+      .setDescription('New height (players only)')
+      .setRequired(false))
+  .addStringOption(option => 
+    option.setName('weight')
+      .setDescription('New weight (players only)')
+      .setRequired(false))
+  // Coach-specific options
+  .addStringOption(option => 
+    option.setName('specialty')
+      .setDescription('New specialty (coaches only)')
+      .setRequired(false)
+      .addChoices(
+        { name: 'Head Coach', value: 'Head Coach' },
+        { name: 'Assistant Coach', value: 'Assistant Coach' },
+        { name: 'Offensive Coordinator', value: 'Offensive Coordinator' },
+        { name: 'Defensive Coordinator', value: 'Defensive Coordinator' },
+        { name: 'Special Teams Coach', value: 'Special Teams Coach' },
+        { name: 'Position Coach', value: 'Position Coach' }
+      ))
+  .addStringOption(option => 
+    option.setName('experience')
+      .setDescription('New experience (coaches only)')
+      .setRequired(false)),
 ];
 
 async function registerCommands() {
