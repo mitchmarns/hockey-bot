@@ -21,7 +21,6 @@ const playoffMatchups = require('./playoffMatchups');
 const findSeries = require('./findSeries');
 const simulateSeries = require('./simulateSeries');
 const startSeason = require('./startSeason');
-const instagramPost = require('./instagramPost');
 const createBotTeam = require('./createBotTeam');
 const createCoach = require('./createCoach');
 const coachInfo = require('./coachInfo');
@@ -60,7 +59,6 @@ module.exports = {
   findseries: findSeries,
   simulateseries: simulateSeries,
   startseason: startSeason,
-  instagram: instagramPost,
   createbotteam: createBotTeam,
   createcoach: createCoach,
   coachinfo: coachInfo,

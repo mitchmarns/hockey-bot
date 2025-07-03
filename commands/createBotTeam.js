@@ -41,7 +41,7 @@ const lastNames = [
   'Dubois', 'Marchand', 'Richard', 'Lapierre', 'Belanger', 'Boucher', 'Lefebvre'
 ];
 
-// Generate a realistic hockey player name
+// Generate a random player name 
 function generatePlayerName(position) {
   const first = firstNames[Math.floor(Math.random() * firstNames.length)];
   const last = lastNames[Math.floor(Math.random() * lastNames.length)];
