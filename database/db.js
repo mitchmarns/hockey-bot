@@ -65,6 +65,9 @@ async function initDatabase(guildId) {
 
     // Check if we need to migrate colors column to logo
     await migrateTeamColors(db, guildId);
+    
+    // Ensure team_color column exists
+    await ensureTeamColorColumn(db, guildId);
 
     // Create other tables
     await db.exec(`
@@ -459,6 +462,25 @@ async function migrateTeamColors(db, guildId) {
     }
   } catch (error) {
     console.error(`Error migrating team colors for guild ${guildId}:`, error);
+    // Continue anyway - this shouldn't be fatal
+  }
+}
+
+// Add new migration function before the existing migrateTeamColors function
+async function ensureTeamColorColumn(db, guildId) {
+  try {
+    // Check if team_color column exists
+    const columns = await db.all("PRAGMA table_info(teams)");
+    const columnNames = columns.map((c) => c.name);
+
+    // If team_color column doesn't exist, add it
+    if (!columnNames.includes("team_color")) {
+      console.log(`Adding team_color column to teams table for guild ${guildId}`);
+      await db.run("ALTER TABLE teams ADD COLUMN team_color TEXT DEFAULT '#808080'");
+      console.log(`Successfully added team_color column for guild ${guildId}`);
+    }
+  } catch (error) {
+    console.error(`Error ensuring team_color column for guild ${guildId}:`, error);
     // Continue anyway - this shouldn't be fatal
   }
 }

@@ -201,6 +201,17 @@ async function createBotTeam(interaction) {
       });
     }
     
+    // Ensure team_color column exists before proceeding
+    try {
+      await teamModel.ensureTeamColorColumn(guildId);
+    } catch (columnError) {
+      console.error('Error ensuring team_color column:', columnError);
+      return interaction.reply({
+        content: 'Database schema error. Please contact an administrator.',
+        ephemeral: true
+      });
+    }
+    
     // Mark this user ID as the bot controller (this will be needed to identify AI teams)
     const botUserId = 'BOT_CONTROLLER_' + interaction.user.id;
     

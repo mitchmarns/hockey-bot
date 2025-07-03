@@ -152,6 +152,12 @@ async function extendTeamSchema(guildId) {
   const columns = await db.all('PRAGMA table_info(teams)');
   const columnNames = columns.map(c => c.name);
   
+  // Ensure team_color column exists first
+  if (!columnNames.includes('team_color')) {
+    await db.run("ALTER TABLE teams ADD COLUMN team_color TEXT DEFAULT '#808080'");
+    console.log(`Added team_color column to teams table for guild ${guildId}`);
+  }
+  
   // New team stats to track
   const newStats = [
     { name: 'goals_for', type: 'INTEGER DEFAULT 0' },
@@ -180,6 +186,25 @@ async function extendTeamSchema(guildId) {
   console.log(`Team schema extended with hockey stats for guild ${guildId}`);
 }
 
+// Add a new function to ensure team color column exists
+async function ensureTeamColorColumn(guildId) {
+  try {
+    const db = getDb(guildId);
+    const columns = await db.all('PRAGMA table_info(teams)');
+    const columnNames = columns.map(c => c.name);
+    
+    if (!columnNames.includes('team_color')) {
+      await db.run("ALTER TABLE teams ADD COLUMN team_color TEXT DEFAULT '#808080'");
+      console.log(`Added team_color column to teams table for guild ${guildId}`);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(`Error ensuring team_color column for guild ${guildId}:`, error);
+    throw error;
+  }
+}
+
 module.exports = {
   getTeamByName,
   getAllTeams,
@@ -188,5 +213,6 @@ module.exports = {
   updateTeamRecord,
   getTeamById,
   updateTeamColor,
-  extendTeamSchema
+  extendTeamSchema,
+  ensureTeamColorColumn
 };
