@@ -1,6 +1,7 @@
 // Character Info command handler
 const { EmbedBuilder } = require('discord.js');
 const characterModel = require('../database/models/characterModel');
+const teamModel = require('../database/models/teamModel');
 
 async function characterInfo(interaction) {
   try {
@@ -14,17 +15,39 @@ async function characterInfo(interaction) {
       return interaction.reply(`Character "${characterName}" not found.`);
     }
     
+    // Get team data for color if character has a team
+    const team = character.team_id ? await teamModel.getTeamById(character.team_id, guildId) : null;
+    
+    // Use team color if available, otherwise fall back to character type defaults
+    let embedColor = '#808080'; // Default gray
+    if (team && team.team_color) {
+      embedColor = team.team_color;
+    } else {
+      // Fallback colors by character type if no team color
+      switch (character.character_type) {
+        case 'player':
+          embedColor = '#0099ff';
+          break;
+        case 'coach':
+          embedColor = '#003087';
+          break;
+        default:
+          embedColor = '#FFB81C';
+          break;
+      }
+    }
+    
     // Create hockey card style embed
     const embed = new EmbedBuilder()
+      .setColor(embedColor)
       .setTimestamp();
     
     // Different styling based on character type
     if (character.character_type === 'player') {
-      // Player card styling - use neutral colors
+      // Player card styling - use team color
       embed
-        .setColor('#0099ff') // Changed from hockey red
         .setTitle(`${character.name.toUpperCase()}`)
-        .setDescription(`**${character.team_city?.toUpperCase() || ''} ${character.team_name?.toUpperCase() || ''}**`);
+        .setDescription(`**${character.team_city?.toUpperCase() || ''} ${character.team_name?.toUpperCase() || 'FREE AGENT'}**`);
       
       // Main player info section
       const playerInfo = [];
@@ -70,11 +93,10 @@ async function characterInfo(interaction) {
       }
       
     } else if (character.character_type === 'coach') {
-      // Coach card styling
+      // Coach card styling - use team color
       embed
-        .setColor('#003087') // Professional blue
         .setTitle(`COACH ${character.name.toUpperCase()}`)
-        .setDescription(`**${character.team_city?.toUpperCase() || ''} ${character.team_name?.toUpperCase() || ''}**`);
+        .setDescription(`**${character.team_city?.toUpperCase() || ''} ${character.team_name?.toUpperCase() || 'UNASSIGNED'}**`);
       
       // Coach info section
       const coachInfo = [];
@@ -91,11 +113,10 @@ async function characterInfo(interaction) {
       }
       
     } else {
-      // Staff/Civilian card styling
+      // Staff/Civilian card styling - use team color
       embed
-        .setColor('#FFB81C') // Gold/yellow for staff
         .setTitle(`${character.name.toUpperCase()}`)
-        .setDescription(`**${character.team_city?.toUpperCase() || ''} ${character.team_name?.toUpperCase() || ''}**`);
+        .setDescription(`**${character.team_city?.toUpperCase() || ''} ${character.team_name?.toUpperCase() || 'UNAFFILIATED'}**`);
       
       if (character.job) {
         embed.addFields({ 
