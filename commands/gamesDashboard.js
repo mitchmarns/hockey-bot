@@ -63,6 +63,7 @@ async function gamesDashboard(interaction) {
         '`/gamehistory team:[team name]` - View a team\'s game history\n' +
         '`/gamedetails id:[game id]` - View detailed information about a specific game\n' +
         '`/schedulegame` - Schedule a new game\n' +
+        '`/scheduledgames` - View and play scheduled games\n' +
         '`/simulategame` - Play a game between two teams'
       }
     );

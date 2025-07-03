@@ -5,6 +5,7 @@ const createTeam = require('./createTeam');
 const roster = require('./roster');
 const simulateGame = require('./simulateGame');
 const scheduleGame = require('./scheduleGame');
+const scheduledGames = require('./scheduledGames');
 const standings = require('./standings');
 const playerInfo = require('./playerInfo');
 const roll = require('./roll');
@@ -43,6 +44,7 @@ module.exports = {
   roster: roster,
   simulategame: simulateGame,
   schedulegame: scheduleGame,
+  scheduledgames: scheduledGames,
   standings: standings,
   playerinfo: playerInfo,
   roll: roll,

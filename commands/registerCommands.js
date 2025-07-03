@@ -61,6 +61,22 @@ const commands = [
       option.setName('playoff')
         .setDescription('Is this a playoff game?')
         .setRequired(false)),
+
+  new SlashCommandBuilder()
+    .setName('scheduledgames')
+    .setDescription('View and play scheduled games')
+    .addStringOption(option => 
+      option.setName('action')
+        .setDescription('Action to perform')
+        .setRequired(false)
+        .addChoices(
+          { name: 'List Scheduled Games', value: 'list' },
+          { name: 'Play Scheduled Game', value: 'play' }
+        ))
+    .addIntegerOption(option => 
+      option.setName('gameid')
+        .setDescription('Game ID to play (required when action is "play")')
+        .setRequired(false)),
   
   new SlashCommandBuilder()
     .setName('simulategame')
