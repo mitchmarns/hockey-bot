@@ -341,6 +341,10 @@ new SlashCommandBuilder()
     option.setName('logo')
       .setDescription('Team logo URL')
       .setRequired(false))
+  .addStringOption(option => 
+    option.setName('color')
+      .setDescription('Hex color for the team')
+      .setRequired(false))
   .addIntegerOption(option => 
     option.setName('skill')
       .setDescription('Team skill level (1-100, default: 50)')
