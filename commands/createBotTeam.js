@@ -190,6 +190,7 @@ async function createBotTeam(interaction) {
     const name = interaction.options.getString('name');
     const city = interaction.options.getString('city');
     const logo = interaction.options.getString('logo') || null;
+    // Read color from interaction, default to #808080 if not provided
     const teamColor = interaction.options.getString('color') || '#808080';
     const skillLevel = interaction.options.getInteger('skill') || 50;
     const guildId = interaction.guildId;
@@ -229,22 +230,9 @@ async function createBotTeam(interaction) {
     const teamName = `[BOT] ${name}`;
     
     try {
-      // Create the team with all required fields
-      const teamData = {
-        name: teamName,
-        city: city,
-        logo: logo,
-        team_color: teamColor,
-        wins: 0,
-        losses: 0,
-        ties: 0,
-        goals_for: 0,
-        goals_against: 0
-      };
-      
-      // Use custom function to create team with all fields
-      const teamResult = await createFullTeamRecord(teamData, guildId);
-      const teamId = teamResult.lastID;
+      // Use the teamModel.createTeam function to ensure color is set
+      const teamResult = await teamModel.createTeam(teamName, city, logo, teamColor, guildId);
+      const teamId = teamResult.lastID || teamResult.id;
       console.log('Bot team created successfully with ID:', teamId);
       
       // Track used numbers to avoid duplicates
