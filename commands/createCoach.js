@@ -5,7 +5,6 @@ const coachModel = require('../database/models/coachModel');
 
 async function createCoach(interaction) {
   try {
-    // Defer the reply first to give more time for processing
     await interaction.deferReply();
     
     const name = interaction.options.getString('name');
@@ -15,22 +14,75 @@ async function createCoach(interaction) {
     const biography = interaction.options.getString('bio') || null;
     const faceClaim = interaction.options.getString('faceclaim') || null;
     const guildId = interaction.guildId;
+
+    // Validate required fields
+    if (!name || !teamName) {
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Missing Required Fields',
+            'Coach name and team are required.'
+          )
+        ]
+      });
+    }
+
+    // Validate image URL format
+    if (imageUrl && !/^https?:\/\/.+\.(jpg|jpeg|png|gif)$/i.test(imageUrl)) {
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Invalid Image URL',
+            'Image URL must be a valid link to an image.'
+          )
+        ]
+      });
+    }
     
     // Find team
     const team = await teamModel.getTeamByName(teamName, guildId);
     if (!team) {
-      return await interaction.editReply(`Team "${teamName}" doesn't exist.`);
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Team Not Found',
+            `Team "${teamName}" doesn't exist.`
+          )
+        ]
+      });
     }
-    
+
+    // Check for duplicate coach name
+    const existingCoach = await coachModel.getCoachByName(name, guildId);
+    if (existingCoach && existingCoach.team_id === team.id) {
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Duplicate Name',
+            `A coach named "${name}" already exists for this team.`
+          )
+        ]
+      });
+    }
+
     // Check if a head coach already exists for this team (if creating a head coach)
     if (coachType === 'head') {
       const coaches = await coachModel.getCoachesByTeamId(team.id, guildId);
       const headCoach = coaches.find(c => c.coach_type === 'head');
-      
       if (headCoach) {
-        return await interaction.editReply(`${team.city} ${team.name} already has a head coach: ${headCoach.name}. You can create an assistant coach instead.`);
+        return await interaction.editReply({
+          embeds: [
+            require('../utils/embedBuilder').createErrorEmbed(
+              'Head Coach Exists',
+              `${team.city} ${team.name} already has a head coach: ${headCoach.name}. You can create an assistant coach instead.`
+            )
+          ]
+        });
       }
     }
+
+    // Use team color for embed if available
+    const embedColor = team.team_color || '#0099ff';
     
     // Create the coach
     await coachModel.createCoach(
@@ -43,6 +95,11 @@ async function createCoach(interaction) {
       faceClaim,
       guildId
     );
+
+    // Format fields for readability
+    function formatField(val) {
+      return val ? val.toString().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A';
+    }
     
     // Create embed for response
     const embed = new EmbedBuilder()
@@ -71,27 +128,19 @@ async function createCoach(interaction) {
       embed.setThumbnail(imageUrl);
     }
     
-    // Use editReply instead of reply since we deferred earlier
     return await interaction.editReply({ embeds: [embed] });
     
+  
   } catch (error) {
     console.error('Error in createCoach command:', error);
-    
-    // Check if interaction has been replied to or deferred
-    try {
-      if (interaction.deferred && !interaction.replied) {
-        await interaction.editReply({ 
-          content: `An error occurred: ${error.message}`
-        });
-      } else if (!interaction.replied) {
-        await interaction.reply({ 
-          content: `An error occurred: ${error.message}`, 
-          ephemeral: true 
-        });
-      }
-    } catch (followUpError) {
-      console.error('Error sending error message:', followUpError);
-    }
+    await interaction.editReply({
+      embeds: [
+        require('../utils/embedBuilder').createErrorEmbed(
+          'Error',
+          `An error occurred: ${error.message}`
+        )
+      ]
+    });
   }
 }
 
