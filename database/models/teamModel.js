@@ -6,7 +6,7 @@ async function getTeamByName(name, guildId) {
   if (!name) return null;
   
   try {
-    const db = require("../db").getDb(guildId);
+    const db = getDb(guildId);
     
     // First try exact match (case-insensitive, trimmed)
     let team = await db.get(

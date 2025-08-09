@@ -4,14 +4,10 @@ const { getDb } = require('../db');
 // Get skills for a character
 async function getPlayerSkills(characterId, guildId) {
   const db = getDb(guildId);
-  
   try {
-    // First check if this character has skills in the player_skills table
     const skills = await db.get('SELECT * FROM player_skills WHERE player_id = ?', [characterId]);
-    
-    // Return default skills if none found
     if (!skills) {
-      return {
+      const defaultSkills = {
         player_id: characterId,
         skating: 50,
         shooting: 50,
@@ -20,8 +16,8 @@ async function getPlayerSkills(characterId, guildId) {
         physical: 50,
         goaltending: 50
       };
+      return defaultSkills;
     }
-    
     return skills;
   } catch (error) {
     console.error(`Error getting skills for character ${characterId}:`, error);
