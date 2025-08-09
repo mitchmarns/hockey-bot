@@ -6,6 +6,18 @@ async function stats(interaction) {
   const limit = interaction.options.getInteger('limit') || 10;
   const guildId = interaction.guildId;
   
+  if (!guildId) {
+    return await interaction.reply({
+      embeds: [
+        require('../utils/embedBuilder').createErrorEmbed(
+          'Missing Guild ID',
+          'This command must be used in a server. Guild ID is required.'
+        )
+      ],
+      ephemeral: true
+    });
+  }
+
   let players;
   let title;
   
@@ -59,8 +71,16 @@ async function stats(interaction) {
     // Execute the query
     players = await db.all(query, params);
     
-    if (players.length === 0) {
-      return interaction.reply('No player statistics found. Try playing some games first!');
+    if (!players || players.length === 0) {
+      return await interaction.reply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'No Data',
+            'No player statistics found. Try playing some games first!'
+          )
+        ],
+        ephemeral: true
+      });
     }
     
     // Create embed response
@@ -90,8 +110,10 @@ async function stats(interaction) {
         statDisplay = `${ppg} points per game`;
       }
       
+      // Format position and jersey number
       const positionDisplay = player.position ? player.position.replace(/_/g, ' ') : '';
-      leaderboardText += `${index + 1}. **${player.name}** ${player.jersey_number ? `(#${player.jersey_number}` : ''} ${positionDisplay ? `, ${positionDisplay}` : ''}) - ${statDisplay} - ${player.team_name}\n`;
+      const jerseyDisplay = player.jersey_number ? `(#${player.jersey_number})` : '';
+      leaderboardText += `${index + 1}. **${player.name}** ${jerseyDisplay} ${positionDisplay ? `, ${positionDisplay}` : ''} - ${statDisplay} - ${player.team_name}\n`;
     });
     
     embed.setDescription(leaderboardText);
@@ -99,9 +121,14 @@ async function stats(interaction) {
     await interaction.reply({ embeds: [embed] });
   } catch (error) {
     console.error('Error in stats command:', error);
-    await interaction.reply({ 
-      content: `An error occurred: ${error.message}`, 
-      ephemeral: true 
+    await interaction.reply({
+      embeds: [
+        require('../utils/embedBuilder').createErrorEmbed(
+          'Error',
+          `An error occurred: ${error.message}`
+        )
+      ],
+      ephemeral: true
     });
   }
 }
