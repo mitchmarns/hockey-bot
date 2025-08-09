@@ -5,10 +5,7 @@ const characterModel = require('../database/models/characterModel');
 
 async function createCharacter(interaction) {
   try {
-    console.log('Deferring reply...');
-    // Defer reply to give more processing time
     await interaction.deferReply();
-    console.log('Reply deferred.');
     
     // Get basic character information from command options
     const name = interaction.options.getString('name');
@@ -20,14 +17,57 @@ async function createCharacter(interaction) {
     const faceClaim = interaction.options.getString('faceclaim') || null;
     const guildId = interaction.guildId;
     
-    // Find team
-    console.log(`Searching for team: ${teamName}`);
-    const team = await teamModel.getTeamByName(teamName, guildId);
-    console.log('Team found:', team);
-
-    if (!team) {
-      return await interaction.editReply(`Team "${teamName}" doesn't exist.`);
+    // Validate required fields
+    if (!name || !charType || !teamName) {
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Missing Required Fields',
+            'Name, type, and team are required.'
+          )
+        ]
+      });
     }
+
+    // Validate image URL format
+    if (imageUrl && !/^https?:\/\/.+\.(jpg|jpeg|png|gif)$/i.test(imageUrl)) {
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Invalid Image URL',
+            'Image URL must be a valid link to an image.'
+          )
+        ]
+      });
+    }
+
+    // Find team
+    const team = await teamModel.getTeamByName(teamName, guildId);
+    if (!team) {
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Team Not Found',
+            `Team "${teamName}" doesn't exist.`
+          )
+        ]
+      });
+    }
+
+    // Check for duplicate character name
+    if (await characterModel.getCharacterByName?.(name, guildId)) {
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Duplicate Name',
+            `A character named "${name}" already exists.`
+          )
+        ]
+      });
+    }
+
+    // Use team color for embed if available
+    const embedColor = team.team_color || '#0099ff';
     
     // Create base character data object
     const characterData = {
@@ -57,9 +97,12 @@ async function createCharacter(interaction) {
     }
     
     // Create the character with all relevant fields
-    console.log('Creating character...');
     await characterModel.createCharacter(characterData);
-    console.log('Character created!');
+
+    // Format fields for readability
+    function formatField(val) {
+      return val ? val.toString().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A';
+    }
     
     // Create embed for response
     const embed = new EmbedBuilder()
@@ -107,16 +150,14 @@ async function createCharacter(interaction) {
     
   } catch (error) {
     console.error('Error in createCharacter command:', error);
-    if (interaction.deferred && !interaction.replied) {
-      await interaction.editReply({ 
-        content: `An error occurred: ${error.message}`
-      });
-    } else if (!interaction.replied) {
-      await interaction.reply({ 
-        content: `An error occurred: ${error.message}`, 
-        ephemeral: true 
-      });
-    }
+    await interaction.editReply({
+      embeds: [
+        require('../utils/embedBuilder').createErrorEmbed(
+          'Error',
+          `An error occurred: ${error.message}`
+        )
+      ]
+    });
   }
 }
 
