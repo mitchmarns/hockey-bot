@@ -74,7 +74,6 @@ const { teamModel, playerModel } = findModels();
 
 async function createPlayer(interaction) {
   try {
-    // Defer the reply immediately to prevent interaction timeout
     await interaction.deferReply({ ephemeral: false });
 
     const name = interaction.options.getString('name');
@@ -85,45 +84,103 @@ async function createPlayer(interaction) {
     const faceClaim = interaction.options.getString('faceclaim') || null;
     const guildId = interaction.guildId;
     
-    console.log('Create Player Parameters:', { name, position, number, teamName, imageUrl, faceClaim, guildId });
-    
+// Validate required fields
+    if (!name || !position || !number || !teamName) {
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Missing Required Fields',
+            'Name, position, number, and team are required.'
+          )
+        ]
+      });
+    }
+
+    // Validate image URL format
+    if (imageUrl && !/^https?:\/\/.+\.(jpg|jpeg|png|gif)$/i.test(imageUrl)) {
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Invalid Image URL',
+            'Image URL must be a valid link to an image.'
+          )
+        ]
+      });
+    }
+
     // Check if the team exists
     const team = await teamModel.getTeamByName(teamName, guildId);
     if (!team) {
-      return interaction.editReply(`Team "${teamName}" doesn't exist. Create it first with /createteam.`);
+      return await interaction.editReply({
+        embeds: [
+          require('../utils/embedBuilder').createErrorEmbed(
+            'Team Not Found',
+            `Team "${teamName}" doesn't exist.`
+          )
+        ]
+      });
+    }
+
+    // Check for duplicate player name or number on the same team
+    const existingPlayers = await playerModel.getPlayersByTeamId?.(team.id, guildId);
+    if (existingPlayers) {
+      if (existingPlayers.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+        return await interaction.editReply({
+          embeds: [
+            require('../utils/embedBuilder').createErrorEmbed(
+              'Duplicate Name',
+              `A player named "${name}" already exists on this team.`
+            )
+          ]
+        });
+      }
+      if (existingPlayers.some(p => p.number === number)) {
+        return await interaction.editReply({
+          embeds: [
+            require('../utils/embedBuilder').createErrorEmbed(
+              'Duplicate Number',
+              `Jersey number ${number} is already taken on this team.`
+            )
+          ]
+        });
+      }
     }
     
+    // Use team color for embed if available
+    const embedColor = team.team_color || '#0099ff';
+
     // Create player
-    console.log('Inserting player into database...');
-    const playerResult = await playerModel.createPlayer(
-      name, 
-      position, 
-      number, 
-      team.id, 
-      interaction.user.id, 
+    await playerModel.createPlayer(
+      name,
+      position,
+      number,
+      team.id,
+      interaction.user.id,
       imageUrl,
       faceClaim,
       guildId
     );
-    console.log('Player created successfully');
+
+    // Format fields for readability
+    function formatField(val) {
+      return val ? val.toString().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A';
+    }
     
     const embed = new EmbedBuilder()
-      .setColor('#0099ff')
+      .setColor(embedColor)
       .setTitle('New Player Created')
-      .setDescription(`${name} has been added to ${teamName} as a ${position.replace(/_/g, ' ')}!`)
+      .setDescription(`${formatField(name)} has been added to ${formatField(teamName)} as a ${formatField(position)}!`)
       .addFields(
-        { name: 'Name', value: name, inline: true },
-        { name: 'Position', value: position.replace(/_/g, ' '), inline: true },
+        { name: 'Name', value: formatField(name), inline: true },
+        { name: 'Position', value: formatField(position), inline: true },
         { name: 'Number', value: number.toString(), inline: true }
       )
       .setTimestamp();
 
-      // Add face claim if provided
     if (faceClaim) {
-      embed.addFields({ name: 'Face Claim', value: faceClaim, inline: true });
+      embed.addFields({ name: 'Face Claim', value: formatField(faceClaim), inline: true });
     }
-      
-    // Add player image if provided
+
     if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
       try {
         embed.setThumbnail(imageUrl);
@@ -133,28 +190,17 @@ async function createPlayer(interaction) {
     }
     
     await interaction.editReply({ embeds: [embed] });
-    
+
   } catch (error) {
     console.error('Full error in createPlayer command:', error);
-    
-    try {
-      // Attempt to edit the reply with the error
-      if (interaction.deferred) {
-        await interaction.editReply({ 
-          content: `An error occurred: ${error.message}`, 
-          ephemeral: true 
-        });
-      } else {
-        await interaction.reply({ 
-          content: `An error occurred: ${error.message}`, 
-          ephemeral: true 
-        });
-      }
-    } catch (replyError) {
-      console.error('Error sending error reply:', replyError);
-      // As a last resort, log the error
-      console.error('Could not send error message to user');
-    }
+    await interaction.editReply({
+      embeds: [
+        require('../utils/embedBuilder').createErrorEmbed(
+          'Error',
+          `An error occurred: ${error.message}`
+        )
+      ]
+    });
   }
 }
 
