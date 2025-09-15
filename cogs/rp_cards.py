@@ -22,7 +22,7 @@ class RpCards(commands.Cog):
                            description="One-line caption", color="Hex (#5b6770) or decimal")
     async def rp_instagram(self, inter: discord.Interaction, username: str, image_url: str,
                            song: str | None = None, artist: str | None = None,
-                           description: str | None = None, color: str | int | None = None):
+                           description: str | None = None, color: str | None = None):
         c = parse_color(color, 0x5B6770)
         np = f"\n{THIN}———{EN}*now playing*{EN}**{clamp(song,50)}**{EN}by{EN}*{clamp(artist,50)}*" if song and artist else ""
         header = f"📸{EN}**{username}**{EN}just{EN}updated{EN}their{EN}feed{np}"
@@ -40,7 +40,7 @@ class RpCards(commands.Cog):
                            color="Hex or decimal color")
     async def rp_spotify(self, inter: discord.Interaction, username: str, song: str, artist: str,
                          cover_url: str, progress: str | None = None, duration: str | None = None,
-                         color: str | int | None = None):
+                         color: str | None = None):
         c = parse_color(color, 0x5B6770)
         header = f"🎧{EN}{NB}{username}{EN}is{EN}listening{EN}to{EN}…"
         body = [f"**{clamp(song,70)}**", f"*{clamp(artist,80)}*"]
@@ -68,7 +68,7 @@ class RpCards(commands.Cog):
     async def rp_instagram_as(self, inter: discord.Interaction, poster_name: str, poster_avatar: str,
                               username: str, image_url: str, song: str | None = None,
                               artist: str | None = None, description: str | None = None,
-                              color: str | int | None = None):
+                              color: str | None = None):
         c = parse_color(color, 0x5B6770)
         np = f"\n{THIN}———{EN}*now playing*{EN}**{clamp(song,50)}**{EN}by{EN}*{clamp(artist,50)}*" if song and artist else ""
         header = f"📸{EN}**{username}**{EN}just{EN}updated{EN}their{EN}feed{np}"
@@ -93,7 +93,7 @@ class RpCards(commands.Cog):
     async def rp_spotify_as(self, inter: discord.Interaction, poster_name: str, poster_avatar: str,
                             username: str, song: str, artist: str, cover_url: str,
                             progress: str | None = None, duration: str | None = None,
-                            color: str | int | None = None):
+                            color: str | None = None):
         c = parse_color(color, 0x5B6770)
         header = f"🎧{EN}{NB}{username}{EN}is{EN}listening{EN}to{EN}…"
         body = [f"**{clamp(song,70)}**", f"*{clamp(artist,80)}*"]
