@@ -12,10 +12,6 @@ class Config(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await DB.init()
-
     @app_commands.command(name="config_reviewchannel", description="Set the review channel for this server.")
     @app_commands.describe(channel="Channel where applications will be posted for review")
     async def config_reviewchannel(self, inter: discord.Interaction, channel: discord.abc.GuildChannel):

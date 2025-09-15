@@ -122,10 +122,6 @@ class Characters(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await DB.init()
-
     @app_commands.command(name="apply", description="Apply for a character (admin review required).")
     async def apply(self, interaction: discord.Interaction):
         if not interaction.guild:
