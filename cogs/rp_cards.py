@@ -16,11 +16,11 @@ class RpCards(commands.Cog):
         self.bot = bot
 
     # ---------- Normal (posted as the bot) ----------
-    @app_commands.command(name="rp_instagram", description="Instagram-style card (posted as the bot).")
+    @app_commands.command(name="instagram", description="Instagram-style card (posted as the bot).")
     @app_commands.describe(username="Display name", image_url="Main image URL",
                            song="Now playing (optional)", artist="Artist (optional)",
                            description="One-line caption", color="Hex (#5b6770) or decimal")
-    async def rp_instagram(self, inter: discord.Interaction, username: str, image_url: str,
+    async def instagram(self, inter: discord.Interaction, username: str, image_url: str,
                            song: str | None = None, artist: str | None = None,
                            description: str | None = None, color: str | None = None):
         c = parse_color(color, 0x5B6770)
@@ -34,12 +34,12 @@ class RpCards(commands.Cog):
 
         await inter.response.send_message(embeds=[top, mid, bottom], allowed_mentions=discord.AllowedMentions.none())
 
-    @app_commands.command(name="rp_spotify", description="Spotify-style now playing (posted as the bot).")
+    @app_commands.command(name="spotify", description="Spotify-style now playing (posted as the bot).")
     @app_commands.describe(username="Display name", song="Song", artist="Artist",
                            cover_url="Cover image URL", progress="2:22", duration="3:19",
                            color="Hex or decimal color")
-    async def rp_spotify(self, inter: discord.Interaction, username: str, song: str, artist: str,
-                         cover_url: str, progress: str | None = None, duration: str | None = None,
+    async def spotify(self, inter: discord.Interaction, username: str, song: str, artist: str,
+                      cover_url: str, progress: str | None = None, duration: str | None = None,
                          color: str | None = None):
         c = parse_color(color, 0x5B6770)
         header = f"🎧{EN}{NB}{username}{EN}is{EN}listening{EN}to{EN}…"
@@ -60,12 +60,12 @@ class RpCards(commands.Cog):
             await wh.send(content=content, username=username, avatar_url=avatar_url,
                           embeds=embeds, allowed_mentions=discord.AllowedMentions.none(), wait=True)
 
-    @app_commands.command(name="rp_instagram_as", description="Instagram-style card posted AS a custom name/avatar.")
+    @app_commands.command(name="instagram_as", description="Instagram-style card posted AS a custom name/avatar.")
     @app_commands.describe(poster_name="Webhook display name", poster_avatar="Webhook avatar URL",
                            username="Displayed Instagram username text", image_url="Main image URL",
                            song="Now playing (optional)", artist="Artist (optional)",
                            description="One-line caption", color="Hex or decimal color")
-    async def rp_instagram_as(self, inter: discord.Interaction, poster_name: str, poster_avatar: str,
+    async def instagram_as(self, inter: discord.Interaction, poster_name: str, poster_avatar: str,
                               username: str, image_url: str, song: str | None = None,
                               artist: str | None = None, description: str | None = None,
                               color: str | None = None):
@@ -85,15 +85,15 @@ class RpCards(commands.Cog):
         except Exception as e:
             await inter.followup.send(f"❌ {e}", ephemeral=True)
 
-    @app_commands.command(name="rp_spotify_as", description="Spotify-style card posted AS a custom name/avatar.")
+    @app_commands.command(name="spotify_as", description="Spotify-style card posted AS a custom name/avatar.")
     @app_commands.describe(poster_name="Webhook display name", poster_avatar="Webhook avatar URL",
                            username="Displayed name in card", song="Song", artist="Artist",
                            cover_url="Cover URL", progress="2:22", duration="3:19",
                            color="Hex or decimal color")
-    async def rp_spotify_as(self, inter: discord.Interaction, poster_name: str, poster_avatar: str,
-                            username: str, song: str, artist: str, cover_url: str,
-                            progress: str | None = None, duration: str | None = None,
-                            color: str | None = None):
+    async def spotify_as(self, inter: discord.Interaction, poster_name: str, poster_avatar: str,
+                          username: str, song: str, artist: str, cover_url: str,
+                          progress: str | None = None, duration: str | None = None,
+                          color: str | None = None):
         c = parse_color(color, 0x5B6770)
         header = f"🎧{EN}{NB}{username}{EN}is{EN}listening{EN}to{EN}…"
         body = [f"**{clamp(song,70)}**", f"*{clamp(artist,80)}*"]
