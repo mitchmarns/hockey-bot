@@ -8,11 +8,11 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
-        # Load every module in cogs/ as an extension so their `setup()` runs
+        # Load every module in cogs/ 
         import cogs
         for _, name, _ in pkgutil.iter_modules(cogs.__path__):
             await self.load_extension(f"cogs.{name}")
-        # Global sync (you can also do per-guild sync during dev)
+        # Global sync 
         await self.tree.sync()
         print("✅ Slash commands synced.")
 
