@@ -2,12 +2,15 @@ import os
 import pkgutil
 import discord
 from discord.ext import commands
+from utils.db import DB
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 CLIENT_ID = os.getenv("CLIENT_ID")
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
+        await DB.init()
+        print("✅ DB initialized")
         # Load every module in cogs/ 
         import cogs
         for _, name, _ in pkgutil.iter_modules(cogs.__path__):
