@@ -259,6 +259,26 @@ class RejectModal(ui.Modal, title="Reject Character"):
 class Characters(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.bot.loop.create_task(self.restore_review_views())
+
+    async def restore_review_views(self):
+        await self.bot.wait_until_ready()
+        for guild in self.bot.guilds:
+            try:
+                # Get all review messages for this guild
+                review_msgs = await DB.list_review_messages(guild.id)
+                for msg_info in review_msgs:
+                    channel = guild.get_channel(msg_info['channel_id'])
+                    if not channel:
+                        continue
+                    try:
+                        msg = await channel.fetch_message(msg_info['message_id'])
+                        view = ReviewButtons(guild.id, msg_info['char_id'])
+                        await msg.edit(view=view)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
     @app_commands.command(name="apply", description="Apply for a character (admin review required).")
     async def apply(self, interaction: discord.Interaction):
