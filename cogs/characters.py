@@ -1,5 +1,6 @@
 # cogs/characters.py
 from typing import Optional
+from unicodedata import name
 import discord
 import json, re
 from discord.ext import commands
@@ -69,47 +70,49 @@ class ApplyModal(ui.Modal):
             self.inputs[key] = ti
             self.add_item(ti)
 
-    async def on_submit(self, interaction: discord.Interaction):
-        if not interaction.guild:
-            return await interaction.response.send_message("Use this in a server.", ephemeral=True)
+async def on_submit(self, interaction: discord.Interaction):
+    if not interaction.guild:
+        return await interaction.response.send_message("Use this in a server.", ephemeral=True)
 
-        # Gather answers
-        answers = {k: (str(inp.value).strip() if inp.value is not None else "") for k, inp in self.inputs.items()}
+    # Collect answers from the modal
+    answers = {k: (str(inp.value).strip() if inp.value is not None else "") for k, inp in self.inputs.items()}
 
-        # Map to known columns
-        name = answers.pop("name", "") or None
-        bio = answers.pop("bio", "") or None
-        avatar_url = answers.pop("avatar_url", "") or None
-        tupper_name = answers.pop("tupper_name", "") or None
-        tupper_id = answers.pop("tupper_id", "") or None
+    # Required fixed column
+    name = answers.pop("name", "") or None
+    if not name:
+        return await interaction.response.send_message("Name is required.", ephemeral=True)
 
-        # Basic validation
-        if not name:
-            return await interaction.response.send_message("Name is required.", ephemeral=True)
-        if avatar_url and not URL_RE.match(avatar_url):
-            return await interaction.response.send_message("Avatar URL must start with http/https.", ephemeral=True)
+    # Bundle all remaining fields into extra_json
+    extra_json = json.dumps({k: v for k, v in answers.items() if v}, ensure_ascii=False) if any(answers.values()) else None
 
-        # The rest (e.g., age, face_claim, occupation) go into extra_json
-        extra_json = json.dumps({k: v for k, v in answers.items() if v}, ensure_ascii=False) if any(answers.values()) else None
+    # Create the character FIRST → returns char_id
+    char_id = await DB.create_character(
+        guild_id=interaction.guild_id,      # type: ignore
+        owner_id=interaction.user.id,
+        name=name,
+        extra_json=extra_json,
+    )
 
-        row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
-        e = char_embed(row)
+    # Now you can fetch and render it
+    row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
+    e = char_embed(row)
 
-        settings = await DB.get_settings(interaction.guild_id)  # type: ignore
-        review_channel = interaction.guild.get_channel(settings["review_channel_id"]) if (settings and settings["review_channel_id"]) else None  # type: ignore
+    settings = await DB.get_settings(interaction.guild_id)  # type: ignore
+    review_channel = interaction.guild.get_channel(settings["review_channel_id"]) if (settings and settings["review_channel_id"]) else None  # type: ignore
 
-        view = ReviewButtons(interaction.guild_id, char_id)  # type: ignore
-        if review_channel:
-            await review_channel.send(embed=e, view=view)
-            await interaction.response.send_message(
-                f"✅ Application submitted! Your ID is **{char_id}**. Mods will review it soon.",
-                ephemeral=True
-            )
-        else:
-            await interaction.response.send_message(
-                content="(No review channel set with /config_reviewchannel — showing preview here.)",
-                embed=e, view=view, ephemeral=True
-            )
+    view = ReviewButtons(interaction.guild_id, char_id)  # type: ignore
+    if review_channel:
+        await review_channel.send(embed=e, view=view)
+        await interaction.response.send_message(
+            f"✅ Application submitted! Your ID is **{char_id}**. Mods will review it soon.",
+            ephemeral=True
+        )
+    else:
+        await interaction.response.send_message(
+            content="(No review channel set with /config_reviewchannel — showing preview here.)",
+            embed=e, view=view, ephemeral=True
+        )
+
 
 class ReviewButtons(ui.View):
     def __init__(self, guild_id: int, char_id: int):

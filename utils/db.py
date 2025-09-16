@@ -154,20 +154,16 @@ class DB:
         guild_id: int,
         owner_id: int,
         name: str,
-        bio: Optional[str],
-        avatar_url: Optional[str],
-        tupper_name: Optional[str],
-        tupper_id: Optional[str],
         extra_json: Optional[str],  # Age/Face Claim/Occupation and other custom fields go here
     ) -> int:
         async with DB.connect() as db:
             await db.execute("INSERT OR IGNORE INTO users(user_id) VALUES (?);", (owner_id,))
             cur = await db.execute(
                 """
-                INSERT INTO characters(guild_id, owner_id, name, bio, avatar_url, tupper_name, tupper_id, extra_json)
-                VALUES (?,?,?,?,?,?,?,?)
+                INSERT INTO characters(guild_id, owner_id, name, extra_json)
+                VALUES (?,?,?,?)
                 """,
-                (guild_id, owner_id, name, bio, avatar_url, tupper_name, tupper_id, extra_json),
+                (guild_id, owner_id, name, extra_json),
             )
             await db.commit()
             return cur.lastrowid
