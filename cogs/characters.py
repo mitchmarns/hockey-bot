@@ -89,7 +89,7 @@ class ApplyModal(ui.Modal):
                 extra_json=extra_json,
             )
             row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
-            e = char_embed(row)
+            e = char_embed(dict(row))
             settings = await DB.get_settings(interaction.guild_id)  # type: ignore
             review_channel = None
             if settings and settings.get("review_channel_id"):
@@ -181,7 +181,7 @@ class RejectModal(ui.Modal, title="Reject Character"):
       )
         
         row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
-        e = char_embed(row)
+        e = char_embed(dict(row))
 
         settings = await DB.get_settings(interaction.guild_id)  # type: ignore
         review_channel = interaction.guild.get_channel(settings["review_channel_id"]) if (settings and settings["review_channel_id"]) else None  # type: ignore
