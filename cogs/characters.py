@@ -104,17 +104,6 @@ class ApplyModal(ui.Modal):
                 tupper_id=tupper_id or None,
                 extra_json=extra_json,  # if your DB has this column (recommended)
             )
-        except TypeError:
-            # fallback: old signature without extra_json
-            char_id = await DB.create_character(
-                guild_id=interaction.guild_id,  # type: ignore
-                owner_id=interaction.user.id,
-                name=name,
-                bio=bio or "",
-                avatar_url=avatar_url or None,
-                tupper_name=tupper_name or None,
-                tupper_id=tupper_id or None,
-            )
 
         row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
         e = char_embed(row)
