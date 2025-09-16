@@ -70,80 +70,58 @@ class ApplyModal(ui.Modal):
             self.inputs[key] = ti
             self.add_item(ti)
 
-async def on_submit(self, interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True, thinking=True)
-
-    try:
-        if not interaction.guild:
-            return await interaction.response.send_message("Use this in a server.", ephemeral=True)
-
-        # Collect answers from the modal
-        answers = {k: (str(inp.value).strip() if inp.value is not None else "")
-                           for k, inp in self.inputs.items()}
-
-        # Required fixed column
-        name = answers.pop("name", "") or None
-        if not name:
-            return await interaction.response.send_message("Name is required.", ephemeral=True)
-
-        # Bundle all remaining fields into extra_json
-        extra_json = (json.dumps({k: v for k, v in answers.items() if v}, ensure_ascii=False)
-                              if any(answers.values()) else None)
-
-        # Create the character FIRST → returns char_id
-        char_id = await DB.create_character(
-            guild_id=interaction.guild_id,      # type: ignore
-            owner_id=interaction.user.id,
-            name=name,
-            extra_json=extra_json,
-        )
-
-        # Fetch and render the character application
-        row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
-        e = char_embed(row)
-
-        settings = await DB.get_settings(interaction.guild_id)  # type: ignore
-        review_channel = None
-        if settings and settings.get("review_channel_id"):
-            review_channel = interaction.guild.get_channel(int(settings["review_channel_id"]))
-
-        view = ReviewButtons(interaction.guild_id, char_id)  # type: ignore
-        if review_channel:
-            try:
-                await review_channel.send(embed=e, view=view)
-            except Exception as post_err:
-                # Permissions or missing channel – tell the applicant privately, but don't fail the modal
-                print("[ReviewChannelError]", repr(post_err))
-                await interaction.followup.send(
-                    "⚠️ I couldn’t post to the review channel (missing perms or not found). "
-                    "Mods can still review via `/apps`.",
-                    ephemeral=True,
-                )
-
-        # Always acknowledge the applicant
-        await interaction.followup.send(
-            f"✅ Application submitted! Your ID is **{char_id}**. Mods will review it soon.",
-            embed=None,  # (you can attach `e` here too if you want a preview)
-            ephemeral=True,
-        )
-
-    except Exception as e:
-        # Log the full traceback so it shows up in your console
-        print("[ApplyModalError]", repr(e))
-        import traceback
-        print(traceback.format_exc())
-        # Always tell the user something instead of timing out
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True, thinking=True)
         try:
+            if not interaction.guild:
+                return await interaction.response.send_message("Use this in a server.", ephemeral=True)
+            answers = {k: (str(inp.value).strip() if inp.value is not None else "")
+                               for k, inp in self.inputs.items()}
+            name = answers.pop("name", "") or None
+            if not name:
+                return await interaction.response.send_message("Name is required.", ephemeral=True)
+            extra_json = (json.dumps({k: v for k, v in answers.items() if v}, ensure_ascii=False)
+                                  if any(answers.values()) else None)
+            char_id = await DB.create_character(
+                guild_id=interaction.guild_id,      # type: ignore
+                owner_id=interaction.user.id,
+                name=name,
+                extra_json=extra_json,
+            )
+            row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
+            e = char_embed(row)
+            settings = await DB.get_settings(interaction.guild_id)  # type: ignore
+            review_channel = None
+            if settings and settings.get("review_channel_id"):
+                review_channel = interaction.guild.get_channel(int(settings["review_channel_id"]))
+            view = ReviewButtons(interaction.guild_id, char_id)  # type: ignore
+            if review_channel:
+                try:
+                    await review_channel.send(embed=e, view=view)
+                except Exception as post_err:
+                    print("[ReviewChannelError]", repr(post_err))
+                    await interaction.followup.send(
+                        "⚠️ I couldn’t post to the review channel (missing perms or not found). "
+                        "Mods can still review via `/apps`.",
+                        ephemeral=True,
+                    )
             await interaction.followup.send(
-                "❌ Something went wrong submitting your application. "
-                "An admin has been notified. Please try again.",
+                f"✅ Application submitted! Your ID is **{char_id}**. Mods will review it soon.",
+                embed=None,
                 ephemeral=True,
             )
-        except Exception:
-            
-            pass
-         
-
+        except Exception as e:
+            print("[ApplyModalError]", repr(e))
+            import traceback
+            print(traceback.format_exc())
+            try:
+                await interaction.followup.send(
+                    "❌ Something went wrong submitting your application. "
+                    "An admin has been notified. Please try again.",
+                    ephemeral=True,
+                )
+            except Exception:
+                pass
 
 class ReviewButtons(ui.View):
     def __init__(self, guild_id: int, char_id: int):
