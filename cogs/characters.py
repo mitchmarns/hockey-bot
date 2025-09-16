@@ -1,6 +1,7 @@
 # cogs/characters.py
 from typing import Optional
 import discord
+import json, re
 from discord.ext import commands
 from discord import app_commands, ui
 from utils.db import DB
@@ -17,53 +18,122 @@ def char_embed(row: dict) -> discord.Embed:
     e = discord.Embed(title=f"Character #{row['id']}: {row['name']}", color=0x5B6770)
     e.add_field(name="Owner", value=f"<@{row['owner_id']}>", inline=True)
     e.add_field(name="Status", value=row["status"], inline=True)
-    if row.get("bio"): e.add_field(name="Bio", value=row["bio"][:1024], inline=False)
-    if row.get("tupper_name"):
-        e.add_field(name="Tupper", value=f"{row['tupper_name']} ({row['tupper_id'] or 'no id'})", inline=True)
+
+    if row.get("bio"):
+        e.add_field(name="Bio", value=str(row["bio"])[:1024], inline=False)
+
+    extra_json = row.get("extra_json")
+    if extra_json:
+        try:
+            extra = json.loads(extra_json)
+            # Render pretty, but keep it short (Discord limits)
+            pretty = []
+            for k, v in extra.items():
+                if not v:
+                    continue
+                label = k.replace("_", " ").title()
+                pretty.append(f"**{label}**: {v}")
+            if pretty:
+                e.add_field(name="Extra", value="\n".join(pretty)[:1024], inline=False)
+        except Exception:
+            pass
+
     if row.get("decision_reason"):
-        e.add_field(name="Decision Reason", value=row["decision_reason"][:1024], inline=False)
-    if row.get("avatar_url"): e.set_thumbnail(url=row["avatar_url"])
+        e.add_field(name="Decision Reason", value=str(row["decision_reason"])[:1024], inline=False)
+
+    if row.get("avatar_url"):
+        e.set_thumbnail(url=row["avatar_url"])
+
     return e
 
-class ApplyModal(ui.Modal, title="Character Application"):
-    name = ui.TextInput(label="Character name", max_length=80, required=True)
-    bio = ui.TextInput(label="Short bio (1–3 sentences)", style=discord.TextStyle.paragraph, max_length=500, required=True)
-    avatar_url = ui.TextInput(label="Avatar URL (optional)", required=False)
-    tupper_name = ui.TextInput(label="Tupperbox name (optional)", required=False)
-    tupper_id = ui.TextInput(label="Tupperbox ID (optional)", required=False)
+URL_RE = re.compile(r"^https?://", re.I)
 
-    def __init__(self, bot: commands.Bot):
-        super().__init__(timeout=300)
+class ApplyModal(ui.Modal):
+    def __init__(self, bot: commands.Bot, guild_id: int, form: list[dict]):
+        super().__init__(title="Character Application", timeout=300)
         self.bot = bot
+        self.guild_id = guild_id
+        self.form = form
+        self.inputs: dict[str, ui.TextInput] = {}
+
+        # Discord modals allow up to 5 inputs
+        for field in form[:5]:
+            key = field["key"]
+            label = str(field.get("label", key.title()))[:45] or key[:45]
+            style = discord.TextStyle.paragraph if field.get("style") == "paragraph" else discord.TextStyle.short
+            required = bool(field.get("required", False))
+            maxlen = int(field.get("max_length", 2000 if style == discord.TextStyle.paragraph else 100))
+            default = str(field.get("default", ""))
+
+            ti = ui.TextInput(label=label, style=style, required=required, max_length=maxlen, default=default)
+            self.inputs[key] = ti
+            self.add_item(ti)
 
     async def on_submit(self, interaction: discord.Interaction):
         if not interaction.guild:
             return await interaction.response.send_message("Use this in a server.", ephemeral=True)
-        guild_id = interaction.guild_id  # type: ignore
-        owner_id = interaction.user.id
 
-        char_id = await DB.create_character(
-            guild_id=guild_id,
-            owner_id=owner_id,
-            name=str(self.name),
-            bio=str(self.bio),
-            avatar_url=str(self.avatar_url) or None,
-            tupper_name=str(self.tupper_name) or None,
-            tupper_id=str(self.tupper_id) or None
-        )
+        # Gather answers
+        answers = {k: (str(inp.value).strip() if inp.value is not None else "") for k, inp in self.inputs.items()}
 
-        row = await DB.get_character(guild_id, char_id)
+        # Map to known columns
+        name = answers.pop("name", "") or None
+        bio = answers.pop("bio", "") or None
+        avatar_url = answers.pop("avatar_url", "") or None
+        tupper_name = answers.pop("tupper_name", "") or None
+        tupper_id = answers.pop("tupper_id", "") or None
+
+        # Basic validation
+        if not name:
+            return await interaction.response.send_message("Name is required.", ephemeral=True)
+        if avatar_url and not URL_RE.match(avatar_url):
+            return await interaction.response.send_message("Avatar URL must start with http/https.", ephemeral=True)
+
+        # The rest (e.g., age, face_claim, occupation) go into extra_json
+        extra_json = json.dumps({k: v for k, v in answers.items() if v}, ensure_ascii=False) if any(answers.values()) else None
+
+        # Create the character 
+        try:
+            char_id = await DB.create_character(
+                guild_id=interaction.guild_id,  # type: ignore
+                owner_id=interaction.user.id,
+                name=name,
+                bio=bio,
+                avatar_url=avatar_url or None,
+                tupper_name=tupper_name or None,
+                tupper_id=tupper_id or None,
+                extra_json=extra_json,  # if your DB has this column (recommended)
+            )
+        except TypeError:
+            # fallback: old signature without extra_json
+            char_id = await DB.create_character(
+                guild_id=interaction.guild_id,  # type: ignore
+                owner_id=interaction.user.id,
+                name=name,
+                bio=bio or "",
+                avatar_url=avatar_url or None,
+                tupper_name=tupper_name or None,
+                tupper_id=tupper_id or None,
+            )
+
+        row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
         e = char_embed(row)
 
-        settings = await DB.get_settings(guild_id)
+        settings = await DB.get_settings(interaction.guild_id)  # type: ignore
         review_channel = interaction.guild.get_channel(settings["review_channel_id"]) if (settings and settings["review_channel_id"]) else None  # type: ignore
 
-        view = ReviewButtons(guild_id, char_id)
+        view = ReviewButtons(interaction.guild_id, char_id)  # type: ignore
         if review_channel:
             await review_channel.send(embed=e, view=view)
-            await interaction.response.send_message(f"✅ Application submitted! Your ID is **{char_id}**. Mods will review it soon.", ephemeral=True)
+            await interaction.response.send_message(
+                f"✅ Application submitted! Your ID is **{char_id}**. Mods will review it soon.",
+                ephemeral=True
+            )
         else:
-            await interaction.response.send_message(content="(No review channel set with /config_reviewchannel — showing preview here.)", embed=e, view=view, ephemeral=True)
+            await interaction.response.send_message(
+                content="(No review channel set with /config_reviewchannel — showing preview here.)",
+                embed=e, view=view, ephemeral=True
+            )
 
 class ReviewButtons(ui.View):
     def __init__(self, guild_id: int, char_id: int):
@@ -126,7 +196,8 @@ class Characters(commands.Cog):
     async def apply(self, interaction: discord.Interaction):
         if not interaction.guild:
             return await interaction.response.send_message("Use this in a server.", ephemeral=True)
-        await interaction.response.send_modal(ApplyModal(self.bot))
+        form = await DB.get_form(interaction.guild_id)  # type: ignore
+        await interaction.response.send_modal(ApplyModal(self.bot, interaction.guild_id, form))  # type: ignore
 
     @app_commands.command(name="characters", description="List your characters or view one.")
     @app_commands.describe(id="Character ID (optional). If omitted, lists your characters in this server.")

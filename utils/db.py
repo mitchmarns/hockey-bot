@@ -1,4 +1,5 @@
 # utils/db.py
+import json
 import aiosqlite
 import asyncio
 from typing import Optional
@@ -6,6 +7,14 @@ from typing import Optional
 DB_PATH = "bot.db"
 
 INIT_SQL = """
+
+DEFAULT_FORM = [
+    {"key": "name", "label": "Name", "style": "short", "required": True, "max_length": 80},
+    {"key": "age", "label": "Age", "style": "short", "required": True, "max_length": 10},
+    {"key": "face_claim", "label": "Face Claim", "style": "short", "required": True, "max_length": 100},
+    {"key": "occupation", "label": "Occupation", "style": "short", "required": True, "max_length": 100},
+]
+
 PRAGMA journal_mode = WAL;
 
 CREATE TABLE IF NOT EXISTS guild_settings (
@@ -33,6 +42,11 @@ CREATE TABLE IF NOT EXISTS characters (
   decision_reason TEXT
 );
 
+CREATE TABLE IF NOT EXISTS guild_forms (
+  guild_id INTEGER PRIMARY KEY,
+  form_json TEXT NOT NULL  -- JSON array of field descriptors
+);
+
 CREATE INDEX IF NOT EXISTS idx_characters_guild_status ON characters(guild_id, status);
 CREATE INDEX IF NOT EXISTS idx_characters_owner ON characters(owner_id);
 """
@@ -56,6 +70,13 @@ class DB:
                 return
             async with DB.connect() as db:
                 await db.executescript(INIT_SQL)
+                await db.commit()
+
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("PRAGMA table_info(characters)")
+            cols = {row["name"] for row in await cur.fetchall()}
+            if "extra_json" not in cols:
+                await db.execute("ALTER TABLE characters ADD COLUMN extra_json TEXT")
                 await db.commit()
             _initialized = True
 
@@ -87,16 +108,36 @@ class DB:
             """, (guild_id, role_id))
             await db.commit()
 
+    # -------- guild forms --------
+    @staticmethod
+    async def get_form(guild_id: int):
+      async with DB.connect() as db:
+        db.row_factory = aiosqlite.Row
+        cur = await db.execute("SELECT form_json FROM guild_forms WHERE guild_id=?", (guild_id,))
+        row = await cur.fetchone()
+        return json.loads(row["form_json"]) if row else DEFAULT_FORM
+
+    @staticmethod
+    async def set_form(guild_id: int, form: list[dict]):
+        async with DB.connect() as db:
+            data = json.dumps(form, ensure_ascii=False)
+            await db.execute("""
+                INSERT INTO guild_forms(guild_id, form_json)
+                VALUES (?, ?)
+                ON CONFLICT(guild_id) DO UPDATE SET form_json=excluded.form_json
+            """, (guild_id, data))
+            await db.commit()
+
     # -------- characters --------
     @staticmethod
-    async def create_character(guild_id: int, owner_id: int, name: str, bio: str,
-                               avatar_url: Optional[str], tupper_name: Optional[str], tupper_id: Optional[str]) -> int:
+    async def create_character(guild_id: int, owner_id: int, name: str, age: str,
+                               face_claim: str, occupation: str, extra_json: Optional[str],) -> int:
         async with DB.connect() as db:
             await db.execute("INSERT OR IGNORE INTO users(user_id) VALUES (?);", (owner_id,))
             cur = await db.execute("""
-                INSERT INTO characters(guild_id, owner_id, name, bio, avatar_url, tupper_name, tupper_id)
+                INSERT INTO characters(guild_id, owner_id, name, age, face_claim, occupation, extra_json)
                 VALUES (?,?,?,?,?,?,?)
-            """, (guild_id, owner_id, name, bio, avatar_url, tupper_name, tupper_id))
+            """, (guild_id, owner_id, name, age, face_claim, occupation, extra_json))
             await db.commit()
             return cur.lastrowid
 
