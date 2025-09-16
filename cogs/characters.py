@@ -92,19 +92,6 @@ class ApplyModal(ui.Modal):
         # The rest (e.g., age, face_claim, occupation) go into extra_json
         extra_json = json.dumps({k: v for k, v in answers.items() if v}, ensure_ascii=False) if any(answers.values()) else None
 
-        # Create the character 
-        try:
-            char_id = await DB.create_character(
-                guild_id=interaction.guild_id,  # type: ignore
-                owner_id=interaction.user.id,
-                name=name,
-                bio=bio,
-                avatar_url=avatar_url or None,
-                tupper_name=tupper_name or None,
-                tupper_id=tupper_id or None,
-                extra_json=extra_json,  # if your DB has this column (recommended)
-            )
-
         row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
         e = char_embed(row)
 
@@ -163,19 +150,42 @@ class RejectModal(ui.Modal, title="Reject Character"):
         self.char_id = char_id
 
     async def on_submit(self, interaction: discord.Interaction):
-        if not interaction.guild: return await interaction.response.send_message("Use this in a server.", ephemeral=True)
-        settings = await DB.get_settings(interaction.guild_id)  # type: ignore
-        if not isinstance(interaction.user, discord.Member) or not is_reviewer(interaction.user, settings):
-            return await interaction.response.send_message("You can’t reject this.", ephemeral=True)
+        if not interaction.guild: 
+            return await interaction.response.send_message("Use this in a server.", ephemeral=True)
+        answers = {k: (str(inp.value).strip() if inp.value is not None else "") for k, inp in self.inputs.items()}
 
-        await DB.set_status(self.guild_id, self.char_id, "rejected", interaction.user.id, str(self.reason) or None)
-        row = await DB.get_character(self.guild_id, self.char_id)
-        await interaction.response.edit_message(embed=char_embed(row), view=None)
-        try:
-            owner = interaction.guild.get_member(row["owner_id"])
-            if owner: await owner.send(f"Your character **{row['name']}** (ID {self.char_id}) was rejected.\nReason: {row['decision_reason'] or '—'}")
-        except Exception:
-            pass
+        name = answers.pop("name", "") or None
+
+        if not name:
+            return await interaction.response.send_message("Name is required.", ephemeral=True)
+        
+        extra_json = json.dumps({k: v for k, v in answers.items() if v}, ensure_ascii=False) if any(answers.values()) else None
+
+        char_id = await DB.create_character(
+          guild_id=interaction.guild_id,  # type: ignore
+          owner_id=interaction.user.id,
+          name=name,
+          extra_json=extra_json
+      )
+        
+        row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
+        e = char_embed(row)
+
+        settings = await DB.get_settings(interaction.guild_id)  # type: ignore
+        review_channel = interaction.guild.get_channel(settings["review_channel_id"]) if (settings and settings["review_channel_id"]) else None  # type: ignore
+
+        view = ReviewButtons(interaction.guild_id, char_id)  # type: ignore
+        if review_channel:
+            await review_channel.send(embed=e, view=view)
+            await interaction.response.send_message(
+                f"✅ Application submitted! Your ID is **{char_id}**. Mods will review it soon.",
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                content="(No review channel set with /config_reviewchannel — showing preview here.)",
+                embed=e, view=view, ephemeral=True
+            )
 
 class Characters(commands.Cog):
     def __init__(self, bot: commands.Bot):
