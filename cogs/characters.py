@@ -91,6 +91,7 @@ class ApplyModal(ui.Modal):
             row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
             e = char_embed(dict(row))
             settings = await DB.get_settings(interaction.guild_id)  # type: ignore
+            settings = dict(settings) if settings else None
             review_channel = None
             if settings and settings.get("review_channel_id"):
                 review_channel = interaction.guild.get_channel(int(settings["review_channel_id"]))
@@ -133,12 +134,13 @@ class ReviewButtons(ui.View):
     async def approve(self, interaction: discord.Interaction, button: ui.Button):
         if not interaction.guild: return await interaction.response.send_message("Use this in a server.", ephemeral=True)
         settings = await DB.get_settings(interaction.guild_id)  # type: ignore
+        settings = dict(settings) if settings else None
         if not isinstance(interaction.user, discord.Member) or not is_reviewer(interaction.user, settings):
             return await interaction.response.send_message("You can’t approve this.", ephemeral=True)
 
         await DB.set_status(self.guild_id, self.char_id, "approved", interaction.user.id, None)
         row = await DB.get_character(self.guild_id, self.char_id)
-        await interaction.response.edit_message(embed=char_embed(row), view=None)
+        await interaction.response.edit_message(embed=char_embed(dict(row)), view=None)
         try:
             await interaction.followup.send(f"✅ Approved character **#{self.char_id}**.", ephemeral=True)
             owner = interaction.guild.get_member(row["owner_id"])
@@ -150,6 +152,7 @@ class ReviewButtons(ui.View):
     async def reject(self, interaction: discord.Interaction, button: ui.Button):
         if not interaction.guild: return await interaction.response.send_message("Use this in a server.", ephemeral=True)
         settings = await DB.get_settings(interaction.guild_id)  # type: ignore
+        settings = dict(settings) if settings else None
         if not isinstance(interaction.user, discord.Member) or not is_reviewer(interaction.user, settings):
             return await interaction.response.send_message("You can’t reject this.", ephemeral=True)
         await interaction.response.send_modal(RejectModal(self.guild_id, self.char_id))
@@ -184,6 +187,7 @@ class RejectModal(ui.Modal, title="Reject Character"):
         e = char_embed(dict(row))
 
         settings = await DB.get_settings(interaction.guild_id)  # type: ignore
+        settings = dict(settings) if settings else None
         review_channel = interaction.guild.get_channel(settings["review_channel_id"]) if (settings and settings["review_channel_id"]) else None  # type: ignore
 
         view = ReviewButtons(interaction.guild_id, char_id)  # type: ignore
@@ -222,7 +226,7 @@ class Characters(commands.Cog):
                 return await interaction.response.send_message("Character not found (in this server).", ephemeral=True)
             if row["owner_id"] != interaction.user.id and not interaction.user.guild_permissions.manage_guild:
                 return await interaction.response.send_message("You don’t have access to that character.", ephemeral=True)
-            return await interaction.response.send_message(embed=char_embed(row), ephemeral=True)
+            return await interaction.response.send_message(embed=char_embed(dict(row)), ephemeral=True)
         else:
             rows = await DB.list_my_characters(gid, interaction.user.id)
             if not rows:
@@ -261,6 +265,7 @@ class Characters(commands.Cog):
         if not interaction.guild:
             return await interaction.response.send_message("Use this in a server.", ephemeral=True)
         settings = await DB.get_settings(interaction.guild_id)  # type: ignore
+        settings = dict(settings) if settings else None
         if not isinstance(interaction.user, discord.Member) or not is_reviewer(interaction.user, settings):
             return await interaction.response.send_message("You can’t use this.", ephemeral=True)
         row = await DB.get_character(interaction.guild_id, id)  # type: ignore
@@ -275,6 +280,7 @@ class Characters(commands.Cog):
         if not interaction.guild:
             return await interaction.response.send_message("Use this in a server.", ephemeral=True)
         settings = await DB.get_settings(interaction.guild_id)  # type: ignore
+        settings = dict(settings) if settings else None
         if not isinstance(interaction.user, discord.Member) or not is_reviewer(interaction.user, settings):
             return await interaction.response.send_message("You can’t use this.", ephemeral=True)
         row = await DB.get_character(interaction.guild_id, id)  # type: ignore
