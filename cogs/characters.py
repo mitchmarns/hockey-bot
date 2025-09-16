@@ -263,22 +263,28 @@ class Characters(commands.Cog):
 
     async def restore_review_views(self):
         await self.bot.wait_until_ready()
+        print("[restore_review_views] Running...")
         for guild in self.bot.guilds:
             try:
-                # Get all review messages for this guild
+                if not hasattr(DB, "list_review_messages"):
+                    print(f"[restore_review_views] DB.list_review_messages missing for guild {guild.id}")
+                    continue
                 review_msgs = await DB.list_review_messages(guild.id)
+                print(f"[restore_review_views] Found {len(review_msgs)} review messages for guild {guild.id}")
                 for msg_info in review_msgs:
                     channel = guild.get_channel(msg_info['channel_id'])
                     if not channel:
+                        print(f"[restore_review_views] Channel {msg_info['channel_id']} not found in guild {guild.id}")
                         continue
                     try:
                         msg = await channel.fetch_message(msg_info['message_id'])
                         view = ReviewButtons(guild.id, msg_info['char_id'])
                         await msg.edit(view=view)
-                    except Exception:
-                        pass
-            except Exception:
-                pass
+                        print(f"[restore_review_views] Restored view for message {msg_info['message_id']} in channel {msg_info['channel_id']}")
+                    except Exception as e:
+                        print(f"[restore_review_views] Failed to restore view for message {msg_info['message_id']}: {e}")
+            except Exception as e:
+                print(f"[restore_review_views] Error for guild {guild.id}: {e}")
 
     @app_commands.command(name="apply", description="Apply for a character (admin review required).")
     async def apply(self, interaction: discord.Interaction):
