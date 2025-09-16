@@ -176,6 +176,22 @@ class DB:
             cur = await db.execute("SELECT * FROM review_messages WHERE guild_id=?", (guild_id,))
             return await cur.fetchall()
 
+    @staticmethod
+    async def list_review_messages(guild_id: int):
+        """
+        Returns a list of dicts: {channel_id, message_id, char_id} for all review messages in the given guild.
+        """
+        results = []
+        async with aiosqlite.connect(DB_PATH) as db:
+            async with db.execute("SELECT channel_id, message_id, char_id FROM review_messages WHERE guild_id = ?", (guild_id,)) as cursor:
+                async for row in cursor:
+                    results.append({
+                        'channel_id': row[0],
+                        'message_id': row[1],
+                        'char_id': row[2],
+                    })
+        return results
+
     # -------- characters --------
     @staticmethod
     async def create_character(
