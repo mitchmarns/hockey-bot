@@ -2,7 +2,7 @@
 from typing import Optional
 from unicodedata import name
 import discord
-import json, re
+import json, re, traceback
 from discord.ext import commands
 from discord import app_commands, ui
 from utils.db import DB
@@ -71,50 +71,83 @@ class ApplyModal(ui.Modal):
             self.add_item(ti)
 
     async def on_submit(self, interaction: discord.Interaction):
+        # Defer first; from now on use interaction.followup.send(...)
         await interaction.response.defer(ephemeral=True, thinking=True)
         try:
             if not interaction.guild:
-                return await interaction.response.send_message("Use this in a server.", ephemeral=True)
+                await interaction.followup.send("Use this in a server.", ephemeral=True)
+                return
+
+            # Collect answers
             answers = {k: (str(inp.value).strip() if inp.value is not None else "")
-                               for k, inp in self.inputs.items()}
+                       for k, inp in self.inputs.items()}
+
+            # Required: name
             name = answers.pop("name", "") or None
             if not name:
-                return await interaction.response.send_message("Name is required.", ephemeral=True)
-            extra_json = (json.dumps({k: v for k, v in answers.items() if v}, ensure_ascii=False)
-                                  if any(answers.values()) else None)
-            char_id = await DB.create_character(
-                guild_id=interaction.guild_id,      # type: ignore
-                owner_id=interaction.user.id,
-                name=name,
-                extra_json=extra_json,
-            )
+                await interaction.followup.send("Name is required.", ephemeral=True)
+                return
+
+            # Everything else goes into extra_json (e.g., Age, Face Claim, Occupation, etc.)
+            extra_json = json.dumps({k: v for k, v in answers.items() if v}, ensure_ascii=False) if any(answers.values()) else None
+
+            # Create the character (be tolerant of your DB signature)
+            try:
+                # Newer DB signature that accepts extra_json as a named arg
+                char_id = await DB.create_character(
+                    guild_id=interaction.guild_id,       # type: ignore
+                    owner_id=interaction.user.id,
+                    name=name,
+                    extra_json=extra_json,
+                )
+            except TypeError:
+                # Older signature (no extra_json): just store name; extras are ignored
+                char_id = await DB.create_character(
+                    guild_id=interaction.guild_id,       # type: ignore
+                    owner_id=interaction.user.id,
+                    name=name,
+                )
+
+            # Fetch row + build embed
             row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
-            e = char_embed(dict(row))
+            # aiosqlite.Row -> dict for our embed helper
+            row_dict = dict(row) if row is not None else {"id": char_id, "name": name, "owner_id": interaction.user.id, "status": "pending"}
+            e = char_embed(row_dict)
+
+            # Where to route the review?
             settings = await DB.get_settings(interaction.guild_id)  # type: ignore
-            settings = dict(settings) if settings else None
+            settings = dict(settings) if settings else {}
             review_channel = None
-            if settings and settings.get("review_channel_id"):
-                review_channel = interaction.guild.get_channel(int(settings["review_channel_id"]))
+            rc_id = settings.get("review_channel_id")
+            if rc_id:
+                review_channel = interaction.guild.get_channel(int(rc_id))
+
             view = ReviewButtons(interaction.guild_id, char_id)  # type: ignore
+
             if review_channel:
+                # Send to the review channel + save mapping so buttons never expire
+                msg = await review_channel.send(embed=e, view=view)
                 try:
-                    await review_channel.send(embed=e, view=view)
-                except Exception as post_err:
-                    print("[ReviewChannelError]", repr(post_err))
-                    await interaction.followup.send(
-                        "⚠️ I couldn’t post to the review channel (missing perms or not found). "
-                        "Mods can still review via `/apps`.",
-                        ephemeral=True,
-                    )
-            await interaction.followup.send(
-                f"✅ Application submitted! Your ID is **{char_id}**. Mods will review it soon.",
-                embed=None,
-                ephemeral=True,
-            )
-        except Exception as e:
-            print("[ApplyModalError]", repr(e))
-            import traceback
-            print(traceback.format_exc())
+                    await DB.save_review_message(interaction.guild_id, review_channel.id, msg.id, char_id)  # type: ignore
+                except Exception:
+                    # If you haven't added save_review_message yet, this will just no-op
+                    pass
+
+                await interaction.followup.send(
+                    f"✅ Application submitted! Your ID is **{char_id}**. Mods will review it soon.",
+                    ephemeral=True
+                )
+            else:
+                # No review channel configured: show preview back to the applicant
+                await interaction.followup.send(
+                    content="(No review channel set with `/config_reviewchannel` — showing preview here.)",
+                    embed=e, view=view, ephemeral=True
+                )
+
+        except Exception as err:
+            # Log to console and inform the user
+            print("[ApplyModalError]", repr(err))
+            import traceback; print(traceback.format_exc())
             try:
                 await interaction.followup.send(
                     "❌ Something went wrong submitting your application. "
@@ -124,84 +157,103 @@ class ApplyModal(ui.Modal):
             except Exception:
                 pass
 
+
 class ReviewButtons(ui.View):
     def __init__(self, guild_id: int, char_id: int):
         super().__init__(timeout=None)
         self.guild_id = guild_id
         self.char_id = char_id
 
-    @ui.button(label="Approve", style=discord.ButtonStyle.success)
-    async def approve(self, interaction: discord.Interaction, button: ui.Button):
-        if not interaction.guild: return await interaction.response.send_message("Use this in a server.", ephemeral=True)
+        approve = ui.Button(
+            label="Approve",
+            style=discord.ButtonStyle.success,
+            custom_id=f"char:approve:{guild_id}:{char_id}"
+        )
+        reject = ui.Button(
+            label="Reject",
+            style=discord.ButtonStyle.danger,
+            custom_id=f"char:reject:{guild_id}:{char_id}"
+        )
+        approve.callback = self._approve_cb
+        reject.callback = self._reject_cb
+        self.add_item(approve)
+        self.add_item(reject)
+
+    async def _approve_cb(self, interaction: discord.Interaction):
+        if not interaction.guild:
+            return await interaction.response.send_message("Use this in a server.", ephemeral=True)
+
         settings = await DB.get_settings(interaction.guild_id)  # type: ignore
-        settings = dict(settings) if settings else None
         if not isinstance(interaction.user, discord.Member) or not is_reviewer(interaction.user, settings):
             return await interaction.response.send_message("You can’t approve this.", ephemeral=True)
 
         await DB.set_status(self.guild_id, self.char_id, "approved", interaction.user.id, None)
         row = await DB.get_character(self.guild_id, self.char_id)
-        await interaction.response.edit_message(embed=char_embed(dict(row)), view=None)
+        # Remove buttons from the review message
+        await interaction.response.edit_message(embed=char_embed(row), view=None)
+        # Clean up mapping so we don't try to reattach on reboot
+        try:
+            await DB.delete_review_message(self.guild_id, interaction.message.id)  # type: ignore
+        except Exception:
+            pass
+        # Notify
         try:
             await interaction.followup.send(f"✅ Approved character **#{self.char_id}**.", ephemeral=True)
-            owner = interaction.guild.get_member(row["owner_id"])
-            if owner: await owner.send(f"Your character **{row['name']}** (ID {self.char_id}) was approved!")
+            if row:
+                owner = interaction.guild.get_member(row["owner_id"])
+                if owner:
+                    await owner.send(f"Your character **{row['name']}** (ID {self.char_id}) was approved!")
         except Exception:
             pass
 
-    @ui.button(label="Reject", style=discord.ButtonStyle.danger)
-    async def reject(self, interaction: discord.Interaction, button: ui.Button):
-        if not interaction.guild: return await interaction.response.send_message("Use this in a server.", ephemeral=True)
+    async def _reject_cb(self, interaction: discord.Interaction):
+        if not interaction.guild:
+            return await interaction.response.send_message("Use this in a server.", ephemeral=True)
+
         settings = await DB.get_settings(interaction.guild_id)  # type: ignore
-        settings = dict(settings) if settings else None
         if not isinstance(interaction.user, discord.Member) or not is_reviewer(interaction.user, settings):
             return await interaction.response.send_message("You can’t reject this.", ephemeral=True)
-        await interaction.response.send_modal(RejectModal(self.guild_id, self.char_id))
+
+        # Show modal to capture reason; pass identifiers along
+        await interaction.response.send_modal(RejectModal(self.guild_id, self.char_id, review_message_id=interaction.message.id))  # type: ignore
 
 class RejectModal(ui.Modal, title="Reject Character"):
     reason = ui.TextInput(label="Reason (optional)", style=discord.TextStyle.paragraph, required=False)
-    def __init__(self, guild_id: int, char_id: int):
+
+    def __init__(self, guild_id: int, char_id: int, review_message_id: int):
         super().__init__(timeout=300)
         self.guild_id = guild_id
         self.char_id = char_id
+        self.review_message_id = review_message_id
 
     async def on_submit(self, interaction: discord.Interaction):
-        if not interaction.guild: 
+        if not interaction.guild:
             return await interaction.response.send_message("Use this in a server.", ephemeral=True)
-        answers = {k: (str(inp.value).strip() if inp.value is not None else "") for k, inp in self.inputs.items()}
-
-        name = answers.pop("name", "") or None
-
-        if not name:
-            return await interaction.response.send_message("Name is required.", ephemeral=True)
-        
-        extra_json = json.dumps({k: v for k, v in answers.items() if v}, ensure_ascii=False) if any(answers.values()) else None
-
-        char_id = await DB.create_character(
-          guild_id=interaction.guild_id,  # type: ignore
-          owner_id=interaction.user.id,
-          name=name,
-          extra_json=extra_json
-      )
-        
-        row = await DB.get_character(interaction.guild_id, char_id)  # type: ignore
-        e = char_embed(dict(row))
 
         settings = await DB.get_settings(interaction.guild_id)  # type: ignore
-        settings = dict(settings) if settings else None
-        review_channel = interaction.guild.get_channel(settings["review_channel_id"]) if (settings and settings["review_channel_id"]) else None  # type: ignore
+        if not isinstance(interaction.user, discord.Member) or not is_reviewer(interaction.user, settings):
+            return await interaction.response.send_message("You can’t reject this.", ephemeral=True)
 
-        view = ReviewButtons(interaction.guild_id, char_id)  # type: ignore
-        if review_channel:
-            await review_channel.send(embed=e, view=view)
-            await interaction.response.send_message(
-                f"✅ Application submitted! Your ID is **{char_id}**. Mods will review it soon.",
-                ephemeral=True
-            )
-        else:
-            await interaction.response.send_message(
-                content="(No review channel set with /config_reviewchannel — showing preview here.)",
-                embed=e, view=view, ephemeral=True
-            )
+        await DB.set_status(self.guild_id, self.char_id, "rejected", interaction.user.id, str(self.reason) or None)
+        row = await DB.get_character(self.guild_id, self.char_id)
+        await interaction.response.edit_message(embed=char_embed(row), view=None)
+
+        # Clean up mapping so we don't try to reattach on reboot
+        try:
+            await DB.delete_review_message(self.guild_id, self.review_message_id)
+        except Exception:
+            pass
+
+        try:
+            if row:
+                owner = interaction.guild.get_member(row["owner_id"])
+                if owner:
+                    await owner.send(
+                        f"Your character **{row['name']}** (ID {self.char_id}) was rejected.\n"
+                        f"Reason: {row['decision_reason'] or '—'}"
+                    )
+        except Exception:
+            pass
 
 class Characters(commands.Cog):
     def __init__(self, bot: commands.Bot):

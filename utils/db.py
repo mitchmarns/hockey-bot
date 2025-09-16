@@ -41,6 +41,14 @@ CREATE TABLE IF NOT EXISTS guild_forms (
   form_json TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS review_messages (
+  guild_id   INTEGER NOT NULL,
+  channel_id INTEGER NOT NULL,
+  message_id INTEGER NOT NULL,
+  char_id    INTEGER NOT NULL,
+  PRIMARY KEY (guild_id, message_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_characters_guild_status ON characters(guild_id, status);
 CREATE INDEX IF NOT EXISTS idx_characters_owner ON characters(owner_id);
 """
@@ -52,9 +60,6 @@ DEFAULT_FORM = [
     {"key": "age",         "label": "Age",         "style": "short",     "required": True,  "max_length": 10},
     {"key": "face_claim",  "label": "Face Claim",  "style": "short",     "required": True,  "max_length": 100},
     {"key": "occupation",  "label": "Occupation",  "style": "short",     "required": True,  "max_length": 100},
-    # You can also include optional fields below if you want them available across servers:
-    # {"key": "avatar_url", "label": "Avatar URL (optional)", "style": "short", "required": False, "max_length": 200},
-    # {"key": "bio",        "label": "Short bio (optional)",  "style": "paragraph", "required": False, "max_length": 500},
 ]
 
 # guards so init runs exactly once even if called multiple times
@@ -147,6 +152,29 @@ class DB:
                 (guild_id, data),
             )
             await db.commit()
+
+    @staticmethod
+    async def save_review_message(guild_id: int, channel_id: int, message_id: int, char_id: int):
+      async with DB.connect() as db:
+        await db.execute("""
+            INSERT OR REPLACE INTO review_messages(guild_id, channel_id, message_id, char_id)
+            VALUES (?, ?, ?, ?)
+        """, (guild_id, channel_id, message_id, char_id))
+        await db.commit()
+
+    @staticmethod
+    async def delete_review_message(guild_id: int, message_id: int):
+      async with DB.connect() as db:
+        await db.execute("DELETE FROM review_messages WHERE guild_id=? AND message_id=?",
+                         (guild_id, message_id))
+        await db.commit()
+
+    @staticmethod
+    async def list_pending_review_messages(guild_id: int):
+        async with DB.connect() as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("SELECT * FROM review_messages WHERE guild_id=?", (guild_id,))
+            return await cur.fetchall()
 
     # -------- characters --------
     @staticmethod
