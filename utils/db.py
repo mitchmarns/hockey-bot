@@ -43,7 +43,7 @@ _initialized = False
 
 class DB:
     @staticmethod
-    async def connect():
+    def connect():
         return aiosqlite.connect(DB_PATH)
 
     @staticmethod
