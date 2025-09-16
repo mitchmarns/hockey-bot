@@ -312,34 +312,5 @@ class Characters(commands.Cog):
         lines = [f"**#{r['id']}** — {r['name']} — <@{r['owner_id']}>" for r in rows]
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
-    @app_commands.command(name="approve", description="Admin: approve an application by ID (this server).")
-    async def approve(self, interaction: discord.Interaction, id: int):
-        if not interaction.guild:
-            return await interaction.response.send_message("Use this in a server.", ephemeral=True)
-        settings = await DB.get_settings(interaction.guild_id)  # type: ignore
-        settings = dict(settings) if settings else None
-        if not isinstance(interaction.user, discord.Member) or not is_reviewer(interaction.user, settings):
-            return await interaction.response.send_message("You can’t use this.", ephemeral=True)
-        row = await DB.get_character(interaction.guild_id, id)  # type: ignore
-        if not row:
-            return await interaction.response.send_message("Not found in this server.", ephemeral=True)
-        await DB.set_status(interaction.guild_id, id, "approved", interaction.user.id, None)  # type: ignore
-        await interaction.response.send_message(f"✅ Approved **#{id}** ({row['name']}).", ephemeral=True)
-
-    @app_commands.command(name="reject", description="Admin: reject an application by ID (this server).")
-    @app_commands.describe(reason="Optional reason")
-    async def reject(self, interaction: discord.Interaction, id: int, reason: Optional[str] = None):
-        if not interaction.guild:
-            return await interaction.response.send_message("Use this in a server.", ephemeral=True)
-        settings = await DB.get_settings(interaction.guild_id)  # type: ignore
-        settings = dict(settings) if settings else None
-        if not isinstance(interaction.user, discord.Member) or not is_reviewer(interaction.user, settings):
-            return await interaction.response.send_message("You can’t use this.", ephemeral=True)
-        row = await DB.get_character(interaction.guild_id, id)  # type: ignore
-        if not row:
-            return await interaction.response.send_message("Not found in this server.", ephemeral=True)
-        await DB.set_status(interaction.guild_id, id, "rejected", interaction.user.id, reason)  # type: ignore
-        await interaction.response.send_message(f"❌ Rejected **#{id}** ({row['name']}).", ephemeral=True)
-
 async def setup(bot: commands.Bot):
     await bot.add_cog(Characters(bot))
