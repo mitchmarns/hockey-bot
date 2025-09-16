@@ -44,7 +44,7 @@ _initialized = False
 class DB:
     @staticmethod
     async def connect():
-        return await aiosqlite.connect(DB_PATH)
+        return aiosqlite.connect(DB_PATH)
 
     @staticmethod
     async def init():
@@ -54,7 +54,7 @@ class DB:
         async with _init_lock:
             if _initialized:
                 return
-            async with await DB.connect() as db:
+            async with DB.connect() as db:
                 await db.executescript(INIT_SQL)
                 await db.commit()
             _initialized = True
@@ -62,14 +62,14 @@ class DB:
     # -------- guild settings --------
     @staticmethod
     async def get_settings(guild_id: int):
-        async with await DB.connect() as db:
+        async with DB.connect() as db:
             db.row_factory = aiosqlite.Row
             cur = await db.execute("SELECT * FROM guild_settings WHERE guild_id=?", (guild_id,))
             return await cur.fetchone()
 
     @staticmethod
     async def set_review_channel(guild_id: int, channel_id: Optional[int]):
-        async with await DB.connect() as db:
+        async with DB.connect() as db:
             await db.execute("""
                 INSERT INTO guild_settings(guild_id, review_channel_id)
                 VALUES (?, ?)
@@ -79,7 +79,7 @@ class DB:
 
     @staticmethod
     async def set_reviewer_role(guild_id: int, role_id: Optional[int]):
-        async with await DB.connect() as db:
+        async with DB.connect() as db:
             await db.execute("""
                 INSERT INTO guild_settings(guild_id, reviewer_role_id)
                 VALUES (?, ?)
@@ -91,7 +91,7 @@ class DB:
     @staticmethod
     async def create_character(guild_id: int, owner_id: int, name: str, bio: str,
                                avatar_url: Optional[str], tupper_name: Optional[str], tupper_id: Optional[str]) -> int:
-        async with await DB.connect() as db:
+        async with DB.connect() as db:
             await db.execute("INSERT OR IGNORE INTO users(user_id) VALUES (?);", (owner_id,))
             cur = await db.execute("""
                 INSERT INTO characters(guild_id, owner_id, name, bio, avatar_url, tupper_name, tupper_id)
@@ -102,14 +102,14 @@ class DB:
 
     @staticmethod
     async def get_character(guild_id: int, char_id: int):
-        async with await DB.connect() as db:
+        async with DB.connect() as db:
             db.row_factory = aiosqlite.Row
             cur = await db.execute("SELECT * FROM characters WHERE id=? AND guild_id=?", (char_id, guild_id))
             return await cur.fetchone()
 
     @staticmethod
     async def list_my_characters(guild_id: int, owner_id: int, only_status: Optional[str] = None):
-        async with await DB.connect() as db:
+        async with DB.connect() as db:
             db.row_factory = aiosqlite.Row
             if only_status:
                 cur = await db.execute("""
@@ -127,7 +127,7 @@ class DB:
 
     @staticmethod
     async def list_pending(guild_id: int, limit: int = 20):
-        async with await DB.connect() as db:
+        async with DB.connect() as db:
             db.row_factory = aiosqlite.Row
             cur = await db.execute("""
                 SELECT * FROM characters
@@ -139,7 +139,7 @@ class DB:
 
     @staticmethod
     async def set_status(guild_id: int, char_id: int, status: str, reviewer_id: int, reason: Optional[str]):
-        async with await DB.connect() as db:
+        async with DB.connect() as db:
             await db.execute("""
                 UPDATE characters
                 SET status=?, reviewed_by=?, decision_reason=?
@@ -149,7 +149,7 @@ class DB:
 
     @staticmethod
     async def unlink(guild_id: int, owner_id: int, char_id: int) -> bool:
-        async with await DB.connect() as db:
+        async with DB.connect() as db:
             cur = await db.execute("""
                 DELETE FROM characters
                 WHERE id=? AND guild_id=? AND owner_id=?
