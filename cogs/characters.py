@@ -16,6 +16,7 @@ def is_reviewer(member: discord.Member, settings_row) -> bool:
     return False
 
 def char_embed(row: dict) -> discord.Embed:
+    row = dict(row)  # Ensure row is always a dict
     e = discord.Embed(title=f"Character #{row['id']}: {row['name']}", color=0x5B6770)
     e.add_field(name="Owner", value=f"<@{row['owner_id']}>", inline=True)
     e.add_field(name="Status", value=row["status"], inline=True)
